@@ -169,8 +169,8 @@ fn help() {
     loads the given template
 
   {y}-lt  --load-to{r} {w}[template name] [destination directory]{r}
-    loads the given template into the destination directory (will be created)
-    if it doesn't exist
+    loads the given template into the destination directory (will be created
+    if it doesn't exist)
 
   {y}-l  --list{r}
     lists all the template names
