@@ -1,18 +1,24 @@
 use eyre::{Report, Result};
 use std::fs::{copy, create_dir_all, read_dir};
 
-// just a directory copy rn
-// when this is updated, update also load_template
 pub fn create_template(src: &str, out: &str) -> Result<()> {
-    create_dir_all(out)?;
+    copy_dir(src, out)
+}
 
-    for f in read_dir(src)? {
+pub fn load_tempalte(src: &str, dest: &str) -> Result<()> {
+    copy_dir(src, dest)
+}
+
+fn copy_dir(from: &str, to: &str) -> Result<()> {
+    create_dir_all(to)?;
+
+    for f in read_dir(from)? {
         let f = f?;
 
         let fpath = f.path();
         let fpath = fpath.to_str().ok_or(Report::msg("invalid path"))?;
 
-        let opath = out.to_owned()
+        let opath = to.to_owned()
             + "/"
             + f.file_name()
                 .to_str()
@@ -27,8 +33,4 @@ pub fn create_template(src: &str, out: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn load_tempalte(src: &str, dest: &str) -> Result<()> {
-    create_template(src, dest)
 }

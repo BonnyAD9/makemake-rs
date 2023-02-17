@@ -95,6 +95,7 @@ fn create(name: &str, src: &str) -> Result<()> {
 }
 
 fn load(name: &str, dest: &str) -> Result<()> {
+    // true if the directory exists and isn't empty
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
         if prompt_yn(&format!(
             "the directory {dest} is not empty.\n\
