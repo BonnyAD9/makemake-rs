@@ -26,17 +26,39 @@ fn main() -> Result<()> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-h" | "--help" => action = Help,
-            "-n" | "--new" => {
+            "-c" | "--create" => {
                 let name = args.next().ok_or(Report::msg(format!(
                     "Expected new template name after option '{arg}'"
                 )))?;
                 action = Create((name, "./"));
             }
-            "-u" | "--use" | "--load" => {
+            "-cf" | "--create-from" => {
                 let name = args.next().ok_or(Report::msg(format!(
-                    "Expected new template name after option '{arg}'"
+                    "Expected new template name and source directory \
+                    after option '{arg}'"
+                )))?;
+                let src = args.next().ok_or(Report::msg(format!(
+                    "Expected source directory adter option '{arg}' \
+                    and template name"
+                )))?;
+                action = Create((name, src));
+            }
+            "--load" => {
+                let name = args.next().ok_or(Report::msg(format!(
+                    "Expected existing template name after option '{arg}'"
                 )))?;
                 action = Load((name, "./"))
+            }
+            "-lt" | "--load-to" => {
+                let name = args.next().ok_or(Report::msg(format!(
+                    "Expected existing template name and destination \
+                    directory after option '{arg}'"
+                )))?;
+                let dest = args.next().ok_or(Report::msg(format!(
+                    "Expected destination directory adter option '{arg}' \
+                    and template name"
+                )))?;
+                action = Load((name, dest));
             }
             _ => action = Load((&arg, "./")),
         }
@@ -89,14 +111,12 @@ fn prompt_yn(prompt: &str) -> Result<Option<()>> {
     _ = stdout().flush();
     let mut conf = String::new();
     stdin().read_line(&mut conf)?;
+    let conf = conf.trim();
 
-    return match &conf[..conf.len() - 1] {
+    return match conf {
         "y" | "Y" => Ok(Some(())),
         "n" | "N" | "" => Ok(None),
-        _ => Err(Report::msg(format!(
-            "Invalid option {}",
-            &conf[..conf.len() - 1]
-        ))),
+        _ => Err(Report::msg(format!("Invalid option {conf}"))),
     };
 }
 
@@ -125,11 +145,18 @@ fn help() {
   {y}-h  --help{r}
     shows this help
 
-  {y}-n  --new{r} {w}[template name]{r}
-    creates new template with the given name
+  {y}-c  --create{r} {w}[template name]{r}
+    creates new template with the name
 
-  {y}-u  --use  --load{r} {w}[template name]{r}
+  {y}-cf  --create-from {w}[template name] [template surce directory]{r}
+    creates new template from the directory with the name
+
+  {y}--load{r} {w}[template name]{r}
     loads the given template
+
+  {y}-lt  --load-to{r} {w}[template name] [destination directory]{r}
+    loads the given template into the destination directory (will be created)
+    if it doesn't exist
 ",
         // BonnyAD9 gradient in 3 strings
         "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
