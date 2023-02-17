@@ -15,7 +15,7 @@ Create template named `vscm` from the current directory:
 makemake -c vscm
 ```
 
-Load template name `vscm` to the current directory:
+Load template named `vscm` to the current directory:
 ```
 makemake vscm
 ```
@@ -24,21 +24,21 @@ And more! See help to learn more.
 
 ## Comparison to the old makemake
 ### Features
-[X] Copying files
-[X] Creating directories
-[ ] Variables in files
-[ ] Variables in names
-[ ] Literals in files
-[ ] Literals in names
-[ ] Simple branching in files
-[ ] Simple branching in names
+- [X] Copying files
+- [X] Creating directories
+- [ ] Variables in files
+- [ ] Variables in names
+- [ ] Literals in files
+- [ ] Literals in names
+- [ ] Simple branching in files
+- [ ] Simple branching in names
 
 ### Improvements
-[X] Speed
-[X] Memory usage
-[X] Doesn't crash 2 times when creating the first template
-[X] Whitespace in expressions has no meaning other than separation (there are no expressions yet :)
-[X] Loading template source (source is the same as the template :)
+- [X] Speed
+- [X] Memory usage
+- [X] Doesn't crash 2 times when creating the first template
+- [X] Whitespace in expressions has no meaning other than separation (there are no expressions yet :)
+- [X] Loading template source (source is the same as the template :)
 
 ## Links
 - **Author:** [BonnyAD9](https://github.com/BonnyAD9)
