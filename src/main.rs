@@ -7,7 +7,7 @@ use std::{
     io::{stdin, stdout, Write},
     path::Path,
 };
-use Action::{Create, Help, Load};
+use Action::*;
 
 mod maker;
 
@@ -15,6 +15,7 @@ enum Action<'a> {
     Help,
     Create((&'a str, &'a str)),
     Load((&'a str, &'a str)),
+    List,
 }
 
 fn main() -> Result<()> {
@@ -60,6 +61,7 @@ fn main() -> Result<()> {
                 )))?;
                 action = Load((name, dest));
             }
+            "-l" | "--list" => action = List,
             _ => action = Load((&arg, "./")),
         }
     }
@@ -68,6 +70,7 @@ fn main() -> Result<()> {
         Create(n) => create(n.0, n.1)?,
         Load(n) => load(n.0, n.1)?,
         Help => help(),
+        List => list()?,
     }
 
     Ok(())
@@ -104,6 +107,16 @@ fn load(name: &str, dest: &str) -> Result<()> {
     }
 
     load_tempalte(&get_template_dir(name)?, dest)
+}
+
+fn list() -> Result<()> {
+    for f in read_dir(get_template_dir("")?)? {
+        println!(
+            "{}",
+            f?.file_name().to_str().ok_or(Report::msg("invalid name"))?
+        );
+    }
+    Ok(())
 }
 
 fn prompt_yn(prompt: &str) -> Result<Option<()>> {
@@ -157,6 +170,9 @@ fn help() {
   {y}-lt  --load-to{r} {w}[template name] [destination directory]{r}
     loads the given template into the destination directory (will be created)
     if it doesn't exist
+
+  {y}-l  --list{r}
+    lists all the template names
 ",
         // BonnyAD9 gradient in 3 strings
         "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
