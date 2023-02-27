@@ -2,10 +2,11 @@ use dirs::config_dir;
 use eyre::{Report, Result};
 use maker::{create_template, load_template};
 use std::{
+    collections::HashMap,
     env,
     fs::{read_dir, remove_dir_all},
     io::{stdin, stdout, Write},
-    path::Path, collections::HashMap,
+    path::Path,
 };
 use Action::*;
 
@@ -74,15 +75,20 @@ fn main() -> Result<()> {
             _ => {
                 if arg.starts_with("-D") {
                     let arg = &arg[2..];
-                    if let Some(p) = arg.as_bytes().iter().position(|b| (*b as char) == '=') {
-                        vars.insert(arg[..p].to_owned(), arg[(p + 1)..].to_owned());
+                    if let Some(p) =
+                        arg.as_bytes().iter().position(|b| (*b as char) == '=')
+                    {
+                        vars.insert(
+                            arg[..p].to_owned(),
+                            arg[(p + 1)..].to_owned(),
+                        );
                     } else {
                         vars.insert(arg.to_owned(), "".to_owned());
                     }
                     break;
                 }
                 action = Load((&arg, "./"))
-            },
+            }
         }
     }
 
