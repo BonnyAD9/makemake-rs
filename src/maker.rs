@@ -75,13 +75,13 @@ enum MakeType {
 
 #[derive(Serialize, Deserialize)]
 struct MakeConfig {
-    types: HashMap<String, MakeType>,
+    files: HashMap<String, MakeType>,
     vars: HashMap<String, String>,
 }
 
 impl MakeConfig {
     fn get_type(&self, file: &str) -> MakeType {
-        if let Some(t) = self.types.get(file) {
+        if let Some(t) = self.files.get(file) {
             *t
         } else {
             MakeType::Copy
@@ -179,7 +179,7 @@ fn make_expr<R: Read, W: Write>(
     if let Char('}') = rw.cur {
         Ok(())
     } else {
-        Err(Report::msg("Expected '}}'"))
+        Err(Report::msg("Expected '}'"))
     }
 }
 
