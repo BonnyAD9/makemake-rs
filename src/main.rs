@@ -1,11 +1,11 @@
 use dirs::config_dir;
 use eyre::{Report, Result};
-use maker::{create_template, load_tempalte};
+use maker::{create_template, load_template};
 use std::{
     env,
     fs::{read_dir, remove_dir_all},
     io::{stdin, stdout, Write},
-    path::Path,
+    path::Path, collections::HashMap,
 };
 use Action::*;
 
@@ -23,6 +23,8 @@ fn main() -> Result<()> {
 
     let mut args = args[1..].iter();
     let mut action = Help;
+
+    let mut vars = HashMap::<String, String>::new();
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -62,13 +64,24 @@ fn main() -> Result<()> {
                 action = Load((name, dest));
             }
             "-l" | "--list" => action = List,
-            _ => action = Load((&arg, "./")),
+            _ => {
+                if arg.starts_with("-D") {
+                    let arg = &arg[2..];
+                    if let Some(p) = arg.as_bytes().iter().position(|b| (*b as char) == '=') {
+                        vars.insert(arg[..p].to_owned(), arg[(p + 1)..].to_owned());
+                    } else {
+                        vars.insert(arg.to_owned(), "".to_owned());
+                    }
+                    break;
+                }
+                action = Load((&arg, "./"))
+            },
         }
     }
 
     match action {
         Create(n) => create(n.0, n.1)?,
-        Load(n) => load(n.0, n.1)?,
+        Load(n) => load(n.0, n.1, vars)?,
         Help => help(),
         List => list()?,
     }
@@ -94,7 +107,7 @@ fn create(name: &str, src: &str) -> Result<()> {
     create_template(src, &tdir)
 }
 
-fn load(name: &str, dest: &str) -> Result<()> {
+fn load(name: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
     // true if the directory exists and isn't empty
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
         if prompt_yn(&format!(
@@ -107,7 +120,7 @@ fn load(name: &str, dest: &str) -> Result<()> {
         }
     }
 
-    load_tempalte(&get_template_dir(name)?, dest)
+    load_template(&get_template_dir(name)?, dest, vars)
 }
 
 fn list() -> Result<()> {

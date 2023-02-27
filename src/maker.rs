@@ -93,9 +93,10 @@ pub fn create_template(src: &str, out: &str) -> Result<()> {
     copy_dir(src, out)
 }
 
-pub fn load_tempalte(src: &str, dest: &str) -> Result<()> {
+pub fn load_template(src: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
     if let Ok(f) = File::open(src.to_owned() + "/makemake.json") {
-        let conf: MakeConfig = serde_json::from_reader(f)?;
+        let mut conf: MakeConfig = serde_json::from_reader(f)?;
+        conf.vars.extend(vars);
         make_dir(src, dest, src, &conf)
     } else {
         copy_dir(src, dest)
