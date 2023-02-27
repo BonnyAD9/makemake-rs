@@ -15,6 +15,7 @@ enum Action<'a> {
     Help,
     Create((&'a str, &'a str)),
     Load((&'a str, &'a str)),
+    Remove(&'a str),
     List,
 }
 
@@ -64,6 +65,12 @@ fn main() -> Result<()> {
                 action = Load((name, dest));
             }
             "-l" | "--list" => action = List,
+            "-r" | "--remove" => {
+                let name = args.next().ok_or(Report::msg(format!(
+                    "Expected existing template name after option {arg}"
+                )))?;
+                action = Remove(name);
+            }
             _ => {
                 if arg.starts_with("-D") {
                     let arg = &arg[2..];
@@ -82,6 +89,7 @@ fn main() -> Result<()> {
     match action {
         Create(n) => create(n.0, n.1)?,
         Load(n) => load(n.0, n.1, vars)?,
+        Remove(n) => remove(n)?,
         Help => help(),
         List => list()?,
     }
@@ -121,6 +129,11 @@ fn load(name: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
     }
 
     load_template(&get_template_dir(name)?, dest, vars)
+}
+
+fn remove(name: &str) -> Result<()> {
+    remove_dir_all(get_template_dir(name)?)?;
+    Ok(())
 }
 
 fn list() -> Result<()> {
