@@ -198,8 +198,14 @@ fn help() {
     loads the given template into the destination directory (will be created
     if it doesn't exist)
 
+  {y}-r  --remove{r} {w}[template name]{r}
+    removes the given template
+
   {y}-l  --list{r}
     lists all the template names
+
+  {y}-D{w}[variable name]{d}=[value]{r}
+    defines/redefines a variable
 ",
         // BonnyAD9 gradient in 3 strings
         "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
