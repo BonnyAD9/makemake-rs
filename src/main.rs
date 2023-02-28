@@ -83,7 +83,7 @@ fn main() -> Result<()> {
                             arg[(p + 1)..].to_owned(),
                         );
                     } else {
-                        vars.insert(arg.to_owned(), "".to_owned());
+                        vars.insert(arg.to_owned(), " ".to_owned());
                     }
                     break;
                 }

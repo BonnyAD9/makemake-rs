@@ -7,7 +7,7 @@ use std::{
     io::{Read, Write},
 };
 use utf8_read::{
-    Char::{Char, NoData},
+    Char::{Char, Eof, NoData},
     Reader,
 };
 struct CharRW<R: Read, W: Write> {
@@ -55,15 +55,19 @@ impl<R: Read, W: Write> CharRW<R, W> {
         }
     }
 
-    fn read_while<P: Fn(char) -> bool>(&mut self, p: P) -> Result<String> {
-        let mut s = String::new();
-        while let Char(c) = self.read()? {
+    fn read_while<P: Fn(char) -> bool>(
+        &mut self,
+        out: &mut String,
+        p: P,
+    ) -> Result<()> {
+        while let Char(c) = self.cur {
             if !p(c) {
                 break;
             }
-            s.push(c);
+            out.push(c);
+            self.read()?;
         }
-        Ok(s)
+        Ok(())
     }
 }
 
@@ -161,6 +165,7 @@ fn make_file<R: Read, W: Write>(
                     rw.write(c)?;
                     continue;
                 }
+                rw.read()?;
                 make_expr(rw, &vars)?;
                 continue;
             }
@@ -175,16 +180,104 @@ fn make_expr<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
 ) -> Result<()> {
-    let name = rw.read_while(|c| c != '}')?;
-    if let Some(val) = vars.get(&name) {
-        rw.write_str(&val)?;
+    let mut buf = String::new();
+    while !matches!(rw.cur, Char('}') | Eof | NoData) {
+        read_expr(rw, vars, &mut buf)?;
     }
+    rw.write_str(&buf)
+}
 
-    if let Char('}') = rw.cur {
-        Ok(())
-    } else {
-        Err(Report::msg("Expected '}'"))
+fn read_expr<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    vars: &HashMap<String, String>,
+    out: &mut String,
+) -> Result<()> {
+    match rw.cur {
+        Char('\'') => read_str_literal(rw, out)?,
+        Eof | NoData => return Err(Report::msg("Expected expression")),
+        Char(c) => {
+            if c.is_whitespace() {
+                skip_whitespace(rw)?;
+            } else {
+                read_variable(rw, vars, out)?;
+            }
+        }
+    };
+    Ok(())
+}
+
+fn skip_whitespace<R: Read, W: Write>(rw: &mut CharRW<R, W>) -> Result<()> {
+    rw.read()?;
+    while let Char(c) = rw.cur {
+        if !c.is_whitespace() {
+            break;
+        }
+        rw.read()?;
     }
+    Ok(())
+}
+
+fn read_str_literal<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    out: &mut String,
+) -> Result<()> {
+    rw.read()?;
+    loop {
+        match rw.cur {
+            Char('\\') => read_escape(rw, out)?,
+            Char('\'') => {
+                rw.read()?;
+                return Ok(());
+            }
+            Char(c) => out.push(c),
+            _ => return Err(Report::msg("literal not ended")),
+        }
+        rw.read()?;
+    }
+}
+
+fn read_escape<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    out: &mut String,
+) -> Result<()> {
+    rw.read()?;
+    match rw.cur {
+        Char('n') => out.push('\n'),
+        Char('r') => out.push('\r'),
+        Char('t') => out.push('\t'),
+        Char('x') => {
+            return Err(Report::msg("the '\\x' escape sequence is reserved"))
+        }
+        Char('u') => {
+            return Err(Report::msg("the '\\u' escape sequence is reserved"))
+        }
+        Char(c) => {
+            if c.is_digit(10) {
+                return Err(Report::msg(
+                    "the '\\<num>' escape sequence is reserved",
+                ));
+            }
+            out.push(c);
+        }
+        _ => return Err(Report::msg("Expected escape sequence")),
+    };
+    rw.read()?;
+    Ok(())
+}
+
+fn read_variable<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    vars: &HashMap<String, String>,
+    out: &mut String,
+) -> Result<()> {
+    let mut name = String::new();
+    rw.read_while(&mut name, |c| {
+        !c.is_whitespace() && !matches!(c, '?' | ':' | '\'' | '{' | '}' | '$')
+    })?;
+    if let Some(val) = vars.get(&name) {
+        out.push_str(val);
+    }
+    Ok(())
 }
 
 fn copy_dir(from: &str, to: &str) -> Result<()> {
