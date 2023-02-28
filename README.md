@@ -32,7 +32,7 @@ And more! See help to learn more.
 - [ ] Literals in names
 - [ ] Simple branching in files
 - [ ] Simple branching in names
-- [ ] Ignore config file
+- [X] Ignore config file
 
 ### Improvements
 - [X] Speed
