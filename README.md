@@ -26,12 +26,13 @@ And more! See help to learn more.
 ### Features
 - [X] Copying files
 - [X] Creating directories
-- [ ] Variables in files
+- [X] Variables in files
 - [ ] Variables in names
-- [ ] Literals in files
+- [X] Literals in files
 - [ ] Literals in names
 - [ ] Simple branching in files
 - [ ] Simple branching in names
+- [ ] Ignore config file
 
 ### Improvements
 - [X] Speed
