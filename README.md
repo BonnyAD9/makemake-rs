@@ -33,13 +33,13 @@ And more! See help to learn more.
 - [ ] Simple branching in files
 - [ ] Simple branching in names
 - [X] Ignore config file
+- [ ] Loading template source
 
 ### Improvements
 - [X] Speed
 - [X] Memory usage
 - [X] Doesn't crash 2 times when creating the first template
-- [X] Whitespace in expressions has no meaning other than separation (there are no expressions yet :)
-- [X] Loading template source (source is the same as the template :)
+- [X] Whitespace in expressions has no meaning other than separation
 
 ## Links
 - **Author:** [BonnyAD9](https://github.com/BonnyAD9)
