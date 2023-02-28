@@ -75,6 +75,7 @@ impl<R: Read, W: Write> CharRW<R, W> {
 enum MakeType {
     Copy,
     Make,
+    Ignore,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -147,6 +148,7 @@ fn make_dir(
                     CharRW::new(File::open(fpath)?, File::create(opath)?);
                 make_file(&mut rw, &conf.vars)?;
             }
+            MakeType::Ignore => { }
         }
     }
 
