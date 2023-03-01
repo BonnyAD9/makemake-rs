@@ -243,6 +243,12 @@ fn help() {
 
   {y}-D{w}[variable name]{d}=[value]{r}
     defines/redefines a variable
+
+  {y}-e  --edit{r} {w}[template name]{r}
+    loads template source to this directory
+
+  {y}-ei --edit-in{r} {w}[template name] [directory]{r}
+    loads template source to the given direcotry
 ",
         // BonnyAD9 gradient in 3 strings
         "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
