@@ -1,6 +1,6 @@
 use dirs::config_dir;
 use eyre::{Report, Result};
-use maker::{create_template, load_template};
+use maker::{copy_dir, create_template, load_template};
 use std::{
     collections::HashMap,
     env,
@@ -18,6 +18,7 @@ enum Action<'a> {
     Load((&'a str, &'a str)),
     Remove(&'a str),
     List,
+    Edit((&'a str, &'a str)),
 }
 
 fn main() -> Result<()> {
@@ -72,6 +73,21 @@ fn main() -> Result<()> {
                 )))?;
                 action = Remove(name);
             }
+            "-e" | "--edit" => {
+                let name = args.next().ok_or(Report::msg(format!(
+                    "Expected existing template name after option {arg}"
+                )))?;
+                action = Edit((name, "./"));
+            }
+            "-ei" | "--edit-in" => {
+                let name = args.next().ok_or(Report::msg(format!(
+                    "Expected existing template name after option {arg}"
+                )))?;
+                let dir = args.next().ok_or(Report::msg(format!(
+                    "Expected directory after option {arg} and template name"
+                )))?;
+                action = Edit((name, dir));
+            }
             _ => {
                 if arg.starts_with("-D") {
                     let arg = &arg[2..];
@@ -96,6 +112,7 @@ fn main() -> Result<()> {
         Create(n) => create(n.0, n.1)?,
         Load(n) => load(n.0, n.1, vars)?,
         Remove(n) => remove(n)?,
+        Edit(n) => edit(n.0, n.1)?,
         Help => help(),
         List => list()?,
     }
@@ -140,6 +157,20 @@ fn load(name: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
 fn remove(name: &str) -> Result<()> {
     remove_dir_all(get_template_dir(name)?)?;
     Ok(())
+}
+
+fn edit(name: &str, dest: &str) -> Result<()> {
+    if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
+        if prompt_yn(&format!(
+            "the directory {dest} is not empty.\n\
+            Do you want to load the template source anyway? [y/N]: "
+        ))?
+        .is_none()
+        {
+            return Ok(());
+        }
+    }
+    copy_dir(get_template_dir(name)?.as_str(), dest)
 }
 
 fn list() -> Result<()> {

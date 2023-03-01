@@ -10,6 +10,7 @@ use utf8_read::{
     Char::{Char, Eof, NoData},
     Reader,
 };
+
 struct CharRW<R: Read, W: Write> {
     reader: Reader<R>,
     writer: W,
@@ -148,7 +149,7 @@ fn make_dir(
                     CharRW::new(File::open(fpath)?, File::create(opath)?);
                 make_file(&mut rw, &conf.vars)?;
             }
-            MakeType::Ignore => { }
+            MakeType::Ignore => {}
         }
     }
 
@@ -282,7 +283,7 @@ fn read_variable<R: Read, W: Write>(
     Ok(())
 }
 
-fn copy_dir(from: &str, to: &str) -> Result<()> {
+pub fn copy_dir(from: &str, to: &str) -> Result<()> {
     create_dir_all(to)?;
 
     for f in read_dir(from)? {
