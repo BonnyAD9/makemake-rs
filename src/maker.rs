@@ -196,7 +196,11 @@ fn make_file_name(
     Ok(())
 }
 
-fn make_name<R: Read, W: Write>(rw: &mut CharRW<R, W>, vars: &HashMap<String, String>, out: &mut String) -> Result<()> {
+fn make_name<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    vars: &HashMap<String, String>,
+    out: &mut String,
+) -> Result<()> {
     while let Char(c) = rw.read()? {
         if c == '$' {
             if let Char(c) = rw.read()? {
