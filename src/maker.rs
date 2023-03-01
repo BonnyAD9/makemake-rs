@@ -79,20 +79,29 @@ enum MakeType {
     Ignore,
 }
 
-#[derive(Serialize, Deserialize)]
-struct MakeConfig {
-    files: HashMap<String, MakeType>,
-    vars: HashMap<String, String>,
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+enum MakeInfoEnum {
+    TypeOnly(MakeType),
+    Info(FileInfo),
 }
 
-impl MakeConfig {
-    fn get_type(&self, file: &str) -> MakeType {
-        if let Some(t) = self.files.get(file) {
-            *t
-        } else {
-            MakeType::Copy
-        }
-    }
+#[derive(Clone, Serialize, Deserialize)]
+struct FileInfo {
+    #[serde(default = "default_file_info_action")]
+    action: MakeType,
+    #[serde(default)]
+    name: String,
+}
+
+fn default_file_info_action() -> MakeType {
+    MakeType::Copy
+}
+
+#[derive(Serialize, Deserialize)]
+struct MakeConfig {
+    files: HashMap<String, MakeInfoEnum>,
+    vars: HashMap<String, String>,
 }
 
 pub fn create_template(src: &str, out: &str) -> Result<()> {
@@ -127,11 +136,9 @@ fn make_dir(
         let fpath = f.path();
         let fpath = fpath.to_str().ok_or(Report::msg("invalid path"))?;
 
-        let opath = dest.to_owned()
-            + "/"
-            + f.file_name()
-                .to_str()
-                .ok_or(Report::msg("invalid file name"))?;
+        let dname = f.file_name();
+        let dname = dname.to_str().ok_or(Report::msg("invalid file name"))?;
+        let opath = dest.to_owned() + "/" + dname;
 
         if f.file_type()?.is_dir() {
             make_dir(fpath, &opath, base, conf)?;
@@ -142,17 +149,69 @@ fn make_dir(
             diff_paths(fpath, base).ok_or(Report::msg("Invalid base path"))?;
         let frel = frel.to_str().ok_or(Report::msg("Invalid path"))?;
 
-        match conf.get_type(frel) {
-            MakeType::Copy => _ = copy(fpath, opath)?,
-            MakeType::Make => {
-                let mut rw =
-                    CharRW::new(File::open(fpath)?, File::create(opath)?);
-                make_file(&mut rw, &conf.vars)?;
-            }
-            MakeType::Ignore => {}
+        if let Some(c) = conf.files.get(frel) {
+            make_file_name(c, &conf.vars, fpath, dest, dname)?;
+        } else {
+            copy(fpath, opath)?;
         }
     }
 
+    Ok(())
+}
+
+fn make_file_name(
+    info: &MakeInfoEnum,
+    vars: &HashMap<String, String>,
+    src: &str,
+    dpath: &str,
+    dname: &str,
+) -> Result<()> {
+    let mut buf = String::new();
+    let (action, name) = match info {
+        MakeInfoEnum::TypeOnly(a) => (*a, dname),
+        MakeInfoEnum::Info(i) => {
+            if i.name.len() == 0 {
+                (i.action, dname)
+            } else {
+                make_name(
+                    &mut CharRW::new(i.name.as_bytes(), [].as_mut()),
+                    vars,
+                    &mut buf,
+                )?;
+                (i.action, buf.as_str())
+            }
+        }
+    };
+
+    let dest = dpath.to_owned() + "/" + name;
+
+    match action {
+        MakeType::Copy => _ = copy(src, dest)?,
+        MakeType::Make => {
+            let mut rw = CharRW::new(File::open(src)?, File::create(dest)?);
+            make_file(&mut rw, vars)?;
+        }
+        MakeType::Ignore => {}
+    }
+    Ok(())
+}
+
+fn make_name<R: Read, W: Write>(rw: &mut CharRW<R, W>, vars: &HashMap<String, String>, out: &mut String) -> Result<()> {
+    while let Char(c) = rw.read()? {
+        if c == '$' {
+            if let Char(c) = rw.read()? {
+                if c != '{' {
+                    out.push('$');
+                    out.push(c);
+                    continue;
+                }
+                rw.read()?;
+                make_expr_buf(rw, vars, out)?;
+                continue;
+            }
+        }
+        out.push(c);
+    }
     Ok(())
 }
 
@@ -184,10 +243,19 @@ fn make_expr<R: Read, W: Write>(
     vars: &HashMap<String, String>,
 ) -> Result<()> {
     let mut buf = String::new();
-    while !matches!(rw.cur, Char('}') | Eof | NoData) {
-        read_expr(rw, vars, &mut buf)?;
-    }
+    make_expr_buf(rw, vars, &mut buf)?;
     rw.write_str(&buf)
+}
+
+fn make_expr_buf<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    vars: &HashMap<String, String>,
+    out: &mut String,
+) -> Result<()> {
+    while !matches!(rw.cur, Char('}') | Eof | NoData) {
+        read_expr(rw, vars, out)?;
+    }
+    Ok(())
 }
 
 fn read_expr<R: Read, W: Write>(
