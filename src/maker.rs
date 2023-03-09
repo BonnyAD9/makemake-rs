@@ -11,22 +11,28 @@ use utf8_read::{
     Reader,
 };
 
+/// Struct for reading and writing chars from Read and Write traits
+/// Remembers the last readed char
 struct CharRW<R: Read, W: Write> {
     reader: Reader<R>,
     writer: W,
+    /// the last char readed by any of the read methods
     cur: utf8_read::Char,
 }
 
 impl<R: Read, W: Write> CharRW<R, W> {
+    /// Writes single char `c` to the writer
     fn write(&mut self, c: char) -> Result<()> {
         let b = c.to_string();
         self.write_bytes(b.as_bytes())
     }
 
+    /// Writes string `c` to the writer
     fn write_str(&mut self, c: &str) -> Result<()> {
         self.write_bytes(c.as_bytes())
     }
 
+    /// Writes byte array `b` to the writer
     fn write_bytes(&mut self, b: &[u8]) -> Result<()> {
         if self.writer.write(b)? != b.len() {
             Err(Report::msg("cannot write"))
@@ -35,6 +41,8 @@ impl<R: Read, W: Write> CharRW<R, W> {
         }
     }
 
+    /// Reads single char from the reader and stores it in the .cur field.
+    /// The readed char is also returned.
     fn read(&mut self) -> Result<utf8_read::Char> {
         self.cur = self.reader.next_char()?;
         Ok(self.cur)
@@ -48,6 +56,7 @@ impl<R: Read, W: Write> CharRW<R, W> {
         }
     }*/
 
+    /// Creates new `CharRW` from Read `r` and Write `w`.
     fn new(r: R, w: W) -> Self {
         CharRW {
             reader: Reader::new(r),
@@ -56,6 +65,8 @@ impl<R: Read, W: Write> CharRW<R, W> {
         }
     }
 
+    /// Appends chars to `out` while `p` returns `true`.
+    /// The first unreaded char is stored in the .cur field.
     fn read_while<P: Fn(char) -> bool>(
         &mut self,
         out: &mut String,
@@ -72,6 +83,7 @@ impl<R: Read, W: Write> CharRW<R, W> {
     }
 }
 
+/// Type of action on file
 #[derive(Clone, Copy, Serialize, Deserialize)]
 enum MakeType {
     Copy,
@@ -79,6 +91,7 @@ enum MakeType {
     Ignore,
 }
 
+/// Type of data stored about a file in a config file
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 enum MakeInfoEnum {
@@ -86,6 +99,7 @@ enum MakeInfoEnum {
     Info(FileInfo),
 }
 
+/// Info about a file in a config file.
 #[derive(Clone, Serialize, Deserialize)]
 struct FileInfo {
     #[serde(default = "default_file_info_action")]
@@ -94,34 +108,48 @@ struct FileInfo {
     name: String,
 }
 
+/// Gets the default value for `FileInfo.action`. Used by serde.
 fn default_file_info_action() -> MakeType {
     MakeType::Copy
 }
 
+/// Configuration from config file
 #[derive(Serialize, Deserialize)]
 struct MakeConfig {
     files: HashMap<String, MakeInfoEnum>,
     vars: HashMap<String, String>,
 }
 
+/// Copies the template source from `src` to `out`
 pub fn create_template(src: &str, out: &str) -> Result<()> {
     copy_dir(src, out)
 }
 
+/// Loads the template from its source at `src` into `dest` and expands all
+/// expressions using the template configuration and `vars`.
+/// `vars` have priority over the variables in template config file
 pub fn load_template(
     src: &str,
     dest: &str,
     vars: HashMap<String, String>,
 ) -> Result<()> {
     if let Ok(f) = File::open(src.to_owned() + "/makemake.json") {
+        // Load the template according to its config file
         let mut conf: MakeConfig = serde_json::from_reader(f)?;
         conf.vars.extend(vars);
         make_dir(src, dest, src, &conf)
     } else {
+        // if there is no config file, just copy the template
         copy_dir(src, dest)
     }
 }
 
+/// Loads template from `src` into `dest` with the configuration in `config`.
+/// `base` is used for recursive calling. When calling normally it should be
+/// the same as `src`.
+///
+/// #### Used by:
+/// `load_template`, `make_dir`
 fn make_dir(
     src: &str,
     dest: &str,
@@ -133,25 +161,32 @@ fn make_dir(
     for f in read_dir(src)? {
         let f = f?;
 
+        // Path to the source file/directory
         let fpath = f.path();
         let fpath = fpath.to_str().ok_or(Report::msg("invalid path"))?;
 
+        // Name of the file/directory to create in destination
         let dname = f.file_name();
         let dname = dname.to_str().ok_or(Report::msg("invalid file name"))?;
+        // Path to the file/directory in the destination
         let opath = dest.to_owned() + "/" + dname;
 
+        // If the source is directory, recursively call itself
         if f.file_type()?.is_dir() {
             make_dir(fpath, &opath, base, conf)?;
             continue;
         }
 
+        // Path relative to the template
         let frel =
             diff_paths(fpath, base).ok_or(Report::msg("Invalid base path"))?;
         let frel = frel.to_str().ok_or(Report::msg("Invalid path"))?;
 
         if let Some(c) = conf.files.get(frel) {
+            // expand the file and its name if it is in config
             make_file_name(c, &conf.vars, fpath, dest, dname)?;
         } else {
+            // copy the file if it isn't mentioned in the config
             copy(fpath, opath)?;
         }
     }
@@ -159,6 +194,12 @@ fn make_dir(
     Ok(())
 }
 
+/// Expands expression for the filename `dname` in the source directory `src`
+/// to the destination directory `dpath`. `info` specifies what to do with the
+/// file contents. For expansions uses the variables in `vars`
+///
+/// #### Used by:
+/// `make_dir`
 fn make_file_name(
     info: &MakeInfoEnum,
     vars: &HashMap<String, String>,
