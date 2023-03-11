@@ -488,6 +488,7 @@ fn read_condition<R: Read, W: Write>(
         out.clear();
         read_exprs(rw, vars, out)?;
     } else {
+        out.clear();
         read_exprs(rw, vars, out)?;
         if !matches!(rw.cur, Char(':')) {
             return Err(Report::msg("Expected ':'"));
