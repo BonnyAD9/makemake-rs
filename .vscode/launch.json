@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["-lt", "mmt", "test/res", "-Drm", "-Dprm"],
             "cwd": "${workspaceFolder}"
         },
         {

@@ -102,7 +102,7 @@ fn main() -> Result<()> {
                     } else {
                         vars.insert(arg.to_owned(), " ".to_owned());
                     }
-                    break;
+                    continue;
                 }
                 if arg.starts_with("-") {
                     return Err(Report::msg(format!(
