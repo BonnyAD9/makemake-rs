@@ -156,6 +156,7 @@ fn load_internal_variables(vars: &mut HashMap<String, String>) {
     vars.insert("_IOS".to_owned(), "true".to_owned());
     #[cfg(target_os = "freebsd")]
     vars.insert("_FREEBSD".to_owned(), "true".to_owned());
+    vars.insert("_".to_owned(), "".to_owned());
 }
 
 /// Loads template from `src` into `dest` with the configuration in `config`.
