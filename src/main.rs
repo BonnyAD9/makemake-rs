@@ -6,7 +6,7 @@ use std::{
     env,
     fs::{read_dir, remove_dir_all},
     io::{stdin, stdout, Write},
-    path::Path,
+    path::Path
 };
 use Action::*;
 
@@ -21,6 +21,12 @@ enum Action<'a> {
     Edit((&'a str, &'a str)),
 }
 
+enum PromptAnswer {
+    Yes,
+    No,
+    Ask
+}
+
 fn main() -> Result<()> {
     let args: Vec<_> = env::args().collect();
 
@@ -28,6 +34,8 @@ fn main() -> Result<()> {
     let mut action = Help;
 
     let mut vars = HashMap::<String, String>::new();
+
+    let mut answer = PromptAnswer::Ask;
 
     // process the arguments
     while let Some(arg) = args.next() {
@@ -88,7 +96,23 @@ fn main() -> Result<()> {
                     "Expected directory after option {arg} and template name"
                 )))?;
                 action = Edit((name, dir));
-            }
+            },
+            "-p" | "--prompt-answer" => {
+                let answ = args.next().ok_or(Report::msg(format!(
+                    "Expected 'yes', 'no' or 'ask' after option {arg}"
+                )))?;
+                match answ.to_lowercase().as_str() {
+                    "yes" => answer = PromptAnswer::Yes,
+                    "no" => answer = PromptAnswer::No,
+                    "ask" => answer = PromptAnswer::Ask,
+                    _ => return Err(Report::msg(format!(
+                        "Expected 'yes', 'no' or 'ask' after option {arg}"
+                    ))),
+                }
+            },
+            "-py" => answer = PromptAnswer::Yes,
+            "-pn" => answer = PromptAnswer::No,
+            "-pa" => answer = PromptAnswer::Ask,
             _ => {
                 if arg.starts_with("-D") {
                     let arg = &arg[2..];
@@ -119,10 +143,10 @@ fn main() -> Result<()> {
 
     // Do what the arguments specify
     match action {
-        Create(n) => create(n.0, n.1)?,
-        Load(n) => load(n.0, n.1, vars)?,
+        Create(n) => create(n.0, n.1, answer)?,
+        Load(n) => load(n.0, n.1, vars, answer)?,
         Remove(n) => remove(n)?,
-        Edit(n) => edit(n.0, n.1)?,
+        Edit(n) => edit(n.0, n.1, answer)?,
         Help => help(),
         List => list()?,
     }
@@ -132,14 +156,14 @@ fn main() -> Result<()> {
 
 /// Creates new template with the name `name` from the directory `src` in the
 /// default template folder.
-fn create(name: &str, src: &str) -> Result<()> {
+fn create(name: &str, src: &str, answ: PromptAnswer) -> Result<()> {
     let tdir = get_template_dir(name)?;
 
     if Path::new(&tdir).exists() {
         if prompt_yn(&format!(
             "Template with the name '{name}' already \
             exists.\nDo you want to overwrite it? [y/N]: "
-        ))?
+        ), answ)?
         .is_none()
         {
             return Ok(());
@@ -152,13 +176,13 @@ fn create(name: &str, src: &str) -> Result<()> {
 
 /// Loads template with the name `src` to the directory `dest`. `vars` can
 /// add/override variables in the template config file.
-fn load(name: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
+fn load(name: &str, dest: &str, vars: HashMap<String, String>, answ: PromptAnswer) -> Result<()> {
     // true if the directory exists and isn't empty
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
         if prompt_yn(&format!(
             "the directory {dest} is not empty.\n\
             Do you want to load the template anyway? [y/N]: "
-        ))?
+        ), answ)?
         .is_none()
         {
             return Ok(());
@@ -175,12 +199,12 @@ fn remove(name: &str) -> Result<()> {
 }
 
 /// Copies the template with the name `name` to the directory `dest`.
-fn edit(name: &str, dest: &str) -> Result<()> {
+fn edit(name: &str, dest: &str, answ: PromptAnswer) -> Result<()> {
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
         if prompt_yn(&format!(
             "the directory {dest} is not empty.\n\
             Do you want to load the template source anyway? [y/N]: "
-        ))?
+        ), answ)?
         .is_none()
         {
             return Ok(());
@@ -204,7 +228,12 @@ fn list() -> Result<()> {
 /// enter either 'y' or 'n'. If the user enters something other than
 /// 'y' or 'n' the function reurns Err. If the user enters 'y' the
 /// function returns Ok(Some(())) otherwise returns Ok(None)
-fn prompt_yn(prompt: &str) -> Result<Option<()>> {
+fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<Option<()>> {
+    match answ {
+        PromptAnswer::Ask => {},
+        PromptAnswer::No => return Ok(None),
+        PromptAnswer::Yes => return Ok(Some(())),
+    }
     print!("{prompt}");
     _ = stdout().flush();
     let mut conf = String::new();
