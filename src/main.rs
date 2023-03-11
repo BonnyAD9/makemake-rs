@@ -233,8 +233,10 @@ fn get_template_dir(name: &str) -> Result<String> {
 
 /// Prints colorful help to the stdout.
 fn help() {
+    let v: Option<&str> = option_env!("CARGO_PKG_VERSION");
     println!(
         "Welcome in {g}{i}makemake{r} by {}{}{}
+Version {}
 
 {g}Usage:{r}
   {w}makemake{r} {w}[template name]{r}
@@ -277,6 +279,7 @@ fn help() {
         "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
         "\x1b[38;2;220;50;200mn\x1b[38;2;210;50;210my\x1b[38;2;200;50;220mA",
         "\x1b[38;2;190;50;230mD\x1b[38;2;180;50;240m9\x1b[0m",
+        v.unwrap_or("unknown"),
         g = "\x1b[92m", // green
         i = "\x1b[23m", // italic
         r = "\x1b[0m",  // reset
