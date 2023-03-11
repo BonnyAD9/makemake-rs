@@ -268,9 +268,11 @@ fn help() {
 Version {}
 
 {g}Usage:{r}
-  {w}makemake{r} {w}[template name]{r}
+  {w}makemake{r} {w}[template name]{r} {d}[options]{r}
     loads template
+
   {w}makemake{r} {d}[options]{r}
+    bahaves according to the options, with no options shows this help
 
 {g}Options:{r}
   {y}-h  --help{r}
@@ -303,6 +305,18 @@ Version {}
 
   {y}-ei --edit-in{r} {w}[template name] [directory]{r}
     loads template source to the given direcotry
+
+  {y}-p  --prompt{r} {w}yes|no|ask{r}
+    sets the default answer when prompting. 'yes' will always answer with 'y',
+    'no' will always answer with 'n', 'ask' is default - always ask
+
+  {y}-py{r}, {y}-pn{r}, {y}-pa{r}
+    same as '-p yes', '-p no' and '-p ask' respectively
+
+In case that multiple options that specify the same setting are used, only
+the last is taken into account. e.g. 'makemake vscm -e vscm' will is same
+as 'makemake -e vscm', 'makemake vscm -py -pa' is same as 'makemake vscm' and
+'makemake vscm -c vscm' is same as 'makemake -c vscm'
 ",
         // BonnyAD9 gradient in 3 strings
         "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
