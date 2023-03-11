@@ -104,6 +104,14 @@ fn main() -> Result<()> {
                     }
                     break;
                 }
+                if arg.starts_with("-") {
+                    return Err(Report::msg(format!(
+                        "Invalid option '{}'. If you ment to load template \
+                        use the option '--load' for templates that start with \
+                        '-'",
+                        arg
+                    )))
+                }
                 action = Load((&arg, "./"))
             }
         }
