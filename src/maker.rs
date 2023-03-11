@@ -473,6 +473,9 @@ fn read_variable<R: Read, W: Write>(
 /// If `out` is empty skips expression blocks until the token ':' and reads the
 /// following blocks into `out`. Otherwise reads the following blocks and skips
 /// the next.
+///
+/// #### Used by:
+/// `read_expr`
 fn read_condition<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
