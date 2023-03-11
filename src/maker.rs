@@ -145,6 +145,10 @@ pub fn load_template(
     }
 }
 
+/// Adds internal variables to `vars`
+///
+/// #### Used by:
+/// `load_template`
 fn load_internal_variables(vars: &mut HashMap<String, String>) {
     #[cfg(target_os = "linux")]
     vars.insert("_LINUX".to_owned(), "true".to_owned());
