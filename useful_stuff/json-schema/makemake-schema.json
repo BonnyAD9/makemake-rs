@@ -34,15 +34,13 @@
             }
         },
         "vars": {
-            "additionalProperties": {
-                "type": "string",
-                "patternProperties": {
-                    "[^\\$\\ \t\r\n\\?:\\{\\}\\(\\)\\\\]": {
-                        "type": "string"
-                    }
-                },
-                "additionalProperties": false
-            }
+            "type": "object",
+            "patternProperties": {
+                "[^\\$\\ \t\r\n\\?:\\{\\}\\(\\)\\\\]": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
         },
         "$schema": {
             "type": "string",
