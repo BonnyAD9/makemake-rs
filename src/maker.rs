@@ -116,7 +116,9 @@ fn default_file_info_action() -> MakeType {
 /// Configuration from config file
 #[derive(Serialize, Deserialize)]
 struct MakeConfig {
+    #[serde(default)]
     files: HashMap<String, MakeInfoEnum>,
+    #[serde(default)]
     vars: HashMap<String, String>,
 }
 
