@@ -136,12 +136,26 @@ pub fn load_template(
     if let Ok(f) = File::open(src.to_owned() + "/makemake.json") {
         // Load the template according to its config file
         let mut conf: MakeConfig = serde_json::from_reader(f)?;
+        load_internal_variables(&mut conf.vars);
         conf.vars.extend(vars);
         make_dir(src, dest, src, &conf)
     } else {
         // if there is no config file, just copy the template
         copy_dir(src, dest)
     }
+}
+
+fn load_internal_variables(vars: &mut HashMap<String, String>) {
+    #[cfg(target_os = "linux")]
+    vars.insert("_LINUX".to_owned(), "true".to_owned());
+    #[cfg(target_os = "windows")]
+    vars.insert("_WINDOWS".to_owned(), "true".to_owned());
+    #[cfg(target_os = "macos")]
+    vars.insert("_MACOS".to_owned(), "true".to_owned());
+    #[cfg(target_os = "ios")]
+    vars.insert("_IOS".to_owned(), "true".to_owned());
+    #[cfg(target_os = "freebsd")]
+    vars.insert("_FREEBSD".to_owned(), "true".to_owned());
 }
 
 /// Loads template from `src` into `dest` with the configuration in `config`.
