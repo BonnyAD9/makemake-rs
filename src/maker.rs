@@ -334,17 +334,32 @@ fn make_expr_buf<R: Read, W: Write>(
     vars: &HashMap<String, String>,
     out: &mut String,
 ) -> Result<()> {
-    while !matches!(rw.cur, Char('}') | Eof | NoData) {
+    let mut buf = String::new();
+    if read_exprs(rw, vars, &mut buf)? {
+        return Err(Report::msg(format!("Invalid token '{}'", rw.cur)));
+    }
+    out.push_str(&buf);
+    Ok(())
+}
+
+/// Reads expression blocks from read of `rw` and appends them to `out`.
+/// Uses variables in `vars`.
+///
+/// #### Used by:
+/// `make_expr_buf`, `read_condition`
+fn read_exprs<R: Read, W: Write>(rw: &mut CharRW<R, W>, vars: &HashMap<String, String>, out: &mut String) -> Result<bool> {
+    while !matches!(rw.cur, Char('}') | Char(':') | Eof | NoData) {
         read_expr(rw, vars, out)?;
     }
-    Ok(())
+
+    Ok(matches!(rw.cur, Char(':')))
 }
 
 /// Evaluates single expression block in a expression in read of `rw` and
 /// appends it to `out`. Uses the variables in `vars`.
 ///
 /// #### Used by:
-/// `make_expr_buf`
+/// `read_exprs`
 fn read_expr<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -352,6 +367,7 @@ fn read_expr<R: Read, W: Write>(
 ) -> Result<()> {
     match rw.cur {
         Char('\'') => read_str_literal(rw, out)?,
+        Char('?') => read_condition(rw, vars, out)?,
         Eof | NoData => return Err(Report::msg("Expected expression")),
         Char(c) => {
             if c.is_whitespace() {
@@ -431,7 +447,6 @@ fn read_escape<R: Read, W: Write>(
         }
         _ => return Err(Report::msg("Expected escape sequence")),
     };
-    rw.read()?;
     Ok(())
 }
 
@@ -451,6 +466,36 @@ fn read_variable<R: Read, W: Write>(
     })?;
     if let Some(val) = vars.get(&name) {
         out.push_str(val);
+    }
+    Ok(())
+}
+
+/// If `out` is empty skips expression blocks until the token ':' and reads the
+/// following blocks into `out`. Otherwise reads the following blocks and skips
+/// the next.
+fn read_condition<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    vars: &HashMap<String, String>,
+    out: &mut String
+) -> Result<()> {
+    rw.read()?;
+    if out.len() == 0 {
+        read_exprs(rw, vars, out)?;
+        if !matches!(rw.cur, Char(':')) {
+            return Err(Report::msg("Expected ':'"));
+        }
+        rw.read()?;
+        out.clear();
+        read_exprs(rw, vars, out)?;
+    } else {
+        read_exprs(rw, vars, out)?;
+        if !matches!(rw.cur, Char(':')) {
+            return Err(Report::msg("Expected ':'"));
+        }
+        rw.read()?;
+        let mut buf = String::new();
+        // skip the second part
+        read_exprs(rw, vars, &mut buf)?;
     }
     Ok(())
 }
