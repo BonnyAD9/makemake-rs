@@ -34,13 +34,19 @@
             }
         },
         "vars": {
+            "additionalProperties": {
+                "type": "string",
+                "patternProperties": {
+                    "[^\\$\\ \t\r\n\\?:\\{\\}\\(\\)\\\\]": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "$schema": {
             "type": "string",
-            "patternProperties": {
-                "[^\\$\\ \t\r\n\\?:\\{\\}\\(\\)\\\\]": {
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
+            "description": "The thing that gives you this description"
         }
     },
     "additionalProperties": false
