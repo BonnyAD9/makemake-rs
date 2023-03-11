@@ -237,6 +237,10 @@ fn make_file_name(
                     vars,
                     &mut buf,
                 )?;
+                // skip files with no name
+                if buf.len() == 0 {
+                    return Ok(())
+                }
                 (i.action, buf.as_str())
             }
         }
