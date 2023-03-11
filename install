@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+# installs makemake by copying it into the /bin folder
+
+cargo build -r \
+    && echo "copy makemake to /bin/makemake" \
+    && sudo cp -i target/release/makemake /bin/makemake
