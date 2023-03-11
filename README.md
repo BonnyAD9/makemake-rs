@@ -30,8 +30,8 @@ And more! See help to learn more.
 - [X] Variables in names
 - [X] Literals in files
 - [X] Literals in names
-- [ ] Simple branching in files
-- [ ] Simple branching in names
+- [X] Simple branching in files
+- [X] Simple branching in names
 - [X] Ignore config file
 - [X] Loading template source
 
