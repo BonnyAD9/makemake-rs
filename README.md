@@ -41,6 +41,10 @@ And more! See help to learn more.
 - [X] Doesn't crash 2 times when creating the first template
 - [X] Whitespace in expressions has no meaning other than separation
 - [X] More friendly syntax and config file when creating template
+- [X] Conditionally ignore files
+- [X] Internal variables
+- [X] Json shema for the `makemake.json` files
+- [X] Default prompt answer from CLI
 
 ## Links
 - **Author:** [BonnyAD9](https://github.com/BonnyAD9)
