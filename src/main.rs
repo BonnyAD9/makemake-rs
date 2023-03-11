@@ -29,6 +29,7 @@ fn main() -> Result<()> {
 
     let mut vars = HashMap::<String, String>::new();
 
+    // process the arguments
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-h" | "--help" => action = Help,
@@ -108,6 +109,7 @@ fn main() -> Result<()> {
         }
     }
 
+    // Do what the arguments specify
     match action {
         Create(n) => create(n.0, n.1)?,
         Load(n) => load(n.0, n.1, vars)?,
@@ -120,6 +122,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+/// Creates new template with the name `name` from the directory `src` in the
+/// default template folder.
 fn create(name: &str, src: &str) -> Result<()> {
     let tdir = get_template_dir(name)?;
 
@@ -138,6 +142,8 @@ fn create(name: &str, src: &str) -> Result<()> {
     create_template(src, &tdir)
 }
 
+/// Loads template with the name `src` to the directory `dest`. `vars` can
+/// add/override variables in the template config file.
 fn load(name: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
     // true if the directory exists and isn't empty
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
@@ -154,11 +160,13 @@ fn load(name: &str, dest: &str, vars: HashMap<String, String>) -> Result<()> {
     load_template(&get_template_dir(name)?, dest, vars)
 }
 
+/// Deletes template with the name `name`
 fn remove(name: &str) -> Result<()> {
     remove_dir_all(get_template_dir(name)?)?;
     Ok(())
 }
 
+/// Copies the template with the name `name` to the directory `dest`.
 fn edit(name: &str, dest: &str) -> Result<()> {
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
         if prompt_yn(&format!(
@@ -173,6 +181,7 @@ fn edit(name: &str, dest: &str) -> Result<()> {
     copy_dir(get_template_dir(name)?.as_str(), dest)
 }
 
+/// Prints all the template name to the stdout.
 fn list() -> Result<()> {
     for f in read_dir(get_template_dir("")?)? {
         println!(
@@ -183,6 +192,10 @@ fn list() -> Result<()> {
     Ok(())
 }
 
+/// Writes the string `prompt` to the stdout and waits for the user to
+/// enter either 'y' or 'n'. If the user enters something other than
+/// 'y' or 'n' the function reurns Err. If the user enters 'y' the
+/// function returns Ok(Some(())) otherwise returns Ok(None)
 fn prompt_yn(prompt: &str) -> Result<Option<()>> {
     print!("{prompt}");
     _ = stdout().flush();
@@ -197,6 +210,7 @@ fn prompt_yn(prompt: &str) -> Result<Option<()>> {
     };
 }
 
+/// Gets the directory in which the template with the name `name` is stored.
 fn get_template_dir(name: &str) -> Result<String> {
     let config =
         config_dir().ok_or(Report::msg("Can't get config directory"))?;
@@ -209,6 +223,7 @@ fn get_template_dir(name: &str) -> Result<String> {
         + name)
 }
 
+/// Prints colorful help to the stdout.
 fn help() {
     println!(
         "Welcome in {g}{i}makemake{r} by {}{}{}

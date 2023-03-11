@@ -207,13 +207,17 @@ fn make_file_name(
     dpath: &str,
     dname: &str,
 ) -> Result<()> {
+    // buffer for custom name
     let mut buf = String::new();
+    // Determine the action and file name
     let (action, name) = match info {
         MakeInfoEnum::TypeOnly(a) => (*a, dname),
         MakeInfoEnum::Info(i) => {
             if i.name.len() == 0 {
                 (i.action, dname)
             } else {
+                // Get the name if the template specifies other than the
+                // default
                 make_name(
                     &mut CharRW::new(i.name.as_bytes(), [].as_mut()),
                     vars,
@@ -224,8 +228,10 @@ fn make_file_name(
         }
     };
 
+    // create the file path
     let dest = dpath.to_owned() + "/" + name;
 
+    // do the action with the file
     match action {
         MakeType::Copy => _ = copy(src, dest)?,
         MakeType::Make => {
@@ -237,6 +243,14 @@ fn make_file_name(
     Ok(())
 }
 
+/// Evaluates expressions in filename in the read of `rw` and appends the
+/// name to `out`. Uses variables in `vars`.
+///
+/// The difference between `make_name` and `make_file` is that `make_name`
+/// outputs to a string and `make_file` outputs to the write of `rw`.
+///
+/// #### Used by:
+/// `make_file_name`
 fn make_name<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -260,6 +274,14 @@ fn make_name<R: Read, W: Write>(
     Ok(())
 }
 
+/// Evaluates expressions in read of `rw` and outputs them to the write of
+/// `rw`. Uses the variables in `vars`.
+///
+/// The difference between `make_name` and `make_file` is that `make_name`
+/// outputs to a string and `make_file` outputs to the write of `rw`.
+///
+/// #### Used by:
+/// `make_file_name`
 fn make_file<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -283,6 +305,13 @@ fn make_file<R: Read, W: Write>(
     Ok(())
 }
 
+/// Evaluates single expression (without the '${') from read of `rw` and
+/// outputs it to the write of `rw`. Uses variables in `vars`.
+///
+/// It wraps the `make_expr_buf` function.
+///
+/// #### Used by:
+/// `make_file`
 fn make_expr<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -292,6 +321,14 @@ fn make_expr<R: Read, W: Write>(
     rw.write_str(&buf)
 }
 
+// TODO: Unite make_expr and make_expr_buf (maybe edit the CharRW to be able
+// to output to a string)
+
+/// Evaluates single expression (without the '${') from read of `rw` and
+/// appends it to `out`.
+///
+/// #### Used by:
+/// `make_name`, `make_expr`
 fn make_expr_buf<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -303,6 +340,11 @@ fn make_expr_buf<R: Read, W: Write>(
     Ok(())
 }
 
+/// Evaluates single expression block in a expression in read of `rw` and
+/// appends it to `out`. Uses the variables in `vars`.
+///
+/// #### Used by:
+/// `make_expr_buf`
 fn read_expr<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -322,6 +364,10 @@ fn read_expr<R: Read, W: Write>(
     Ok(())
 }
 
+/// Skips all whitespace characters in read of `rw`.
+///
+/// #### Used by:
+/// `read_expr`
 fn skip_whitespace<R: Read, W: Write>(rw: &mut CharRW<R, W>) -> Result<()> {
     rw.read()?;
     while let Char(c) = rw.cur {
@@ -333,6 +379,10 @@ fn skip_whitespace<R: Read, W: Write>(rw: &mut CharRW<R, W>) -> Result<()> {
     Ok(())
 }
 
+/// Reads string literal from read of `rw` and appends it to `out`.
+///
+/// #### Used by:
+/// `read_expr`
 fn read_str_literal<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     out: &mut String,
@@ -352,6 +402,10 @@ fn read_str_literal<R: Read, W: Write>(
     }
 }
 
+/// Reads the escape sequence from read of `rw` and appends it to `out`.
+///
+/// #### Used by:
+/// `read_str_literal`
 fn read_escape<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     out: &mut String,
@@ -381,6 +435,11 @@ fn read_escape<R: Read, W: Write>(
     Ok(())
 }
 
+/// Reads variable name from read of `rw` and append its value to `out`.
+/// Uses variables in `vars`.
+///
+/// #### Used by:
+/// `read_expr`
 fn read_variable<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
@@ -396,6 +455,7 @@ fn read_variable<R: Read, W: Write>(
     Ok(())
 }
 
+/// Recursively copies the directory `from` to the directory `to`.
 pub fn copy_dir(from: &str, to: &str) -> Result<()> {
     create_dir_all(to)?;
 
