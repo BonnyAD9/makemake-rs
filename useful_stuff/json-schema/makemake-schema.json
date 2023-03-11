@@ -1,3 +1,47 @@
 {
-    "$schema": "http://json-schema.org/schema"
+    "$schema": "http://json-schema.org/schema",
+    "$id": "https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/json-schema/makemake-schema.json",
+    "title": "makemake config file",
+    "description": "Config file for a makemake template",
+    "type": "object",
+    "properties": {
+        "files": {
+            "description": "Dictionary of filenames (relative to the template) that describes what to do with the files",
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "description": "Defines only the action. Copy: copy file (default), Make: expand variables in file, Ignore: do not copy the file",
+                        "type": "string",
+                        "enum": ["Copy", "Make", "Ignore"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "action": {
+                                "description": "Defines what to do with the file. Copy: copy file (default), Make: expand variables in file, Ignore: do not copy the file",
+                                "type": "string",
+                                "enum": ["Copy", "Make", "Ignore"]
+                            },
+                            "name": {
+                                "description": "Defines the name of the file. Here can be expressions. If this expands to empty string the file is ignored.",
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                ]
+            }
+        },
+        "vars": {
+            "type": "string",
+            "patternProperties": {
+                "[^\\$\\ \t\r\n\\?:\\{\\}\\(\\)\\\\]": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false
 }
