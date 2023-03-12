@@ -314,8 +314,8 @@ Version {}
     same as '-p yes', '-p no' and '-p ask' respectively
 
 In case that multiple options that specify the same setting are used, only
-the last is taken into account. e.g. 'makemake vscm -e vscm' will is same
-as 'makemake -e vscm', 'makemake vscm -py -pa' is same as 'makemake vscm' and
+the last is taken into account. e.g. 'makemake vscm -e vscm' is same as
+'makemake -e vscm', 'makemake vscm -py -pa' is same as 'makemake vscm' and
 'makemake vscm -c vscm' is same as 'makemake -c vscm'
 ",
         // BonnyAD9 gradient in 3 strings
