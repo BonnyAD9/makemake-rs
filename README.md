@@ -22,6 +22,9 @@ makemake vscm
 
 And more! See help to learn more.
 
+## Templates
+If you want to see or just use some templates see [BonnyAD9/makemake-templates](https://github.com/BonnyAD9/makemake-templates)
+
 ## Comparison to the old makemake
 ### Features
 - [X] Copying files
