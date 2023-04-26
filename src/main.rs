@@ -11,6 +11,7 @@ use std::{
 use Action::*;
 
 mod maker;
+mod char_rw;
 
 enum Action<'a> {
     Help,
