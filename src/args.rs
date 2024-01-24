@@ -178,9 +178,9 @@ impl<'a> Args<'a> {
                         path: ".",
                     }
                 }
-            }
-        }
+            } // match
+        } // while
 
         Ok(res)
-    }
-}
+    } // fn parse
+} // impl Args<'a>
