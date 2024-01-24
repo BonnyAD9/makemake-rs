@@ -5,7 +5,6 @@ use utf8_read::{
     Reader,
 };
 
-
 /// Struct for reading and writing chars from Read and Write traits
 /// Remembers the last readed char
 pub struct CharRW<R: Read, W: Write> {
@@ -14,7 +13,6 @@ pub struct CharRW<R: Read, W: Write> {
     /// the last char readed by any of the read methods
     pub cur: utf8_read::Char,
 }
-
 
 impl<R: Read, W: Write> CharRW<R, W> {
     /// Writes single char `c` to the writer

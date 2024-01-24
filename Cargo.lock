@@ -101,6 +101,7 @@ dependencies = [
  "serde",
  "serde_json",
  "termal",
+ "thiserror",
  "utf8-read",
 ]
 

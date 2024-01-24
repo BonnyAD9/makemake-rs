@@ -1,3 +1,4 @@
+use crate::char_rw::CharRW;
 use eyre::{Report, Result};
 use pathdiff::diff_paths;
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,6 @@ use std::{
     io::{Read, Write},
 };
 use utf8_read::Char::{Char, Eof, NoData};
-use crate::char_rw::CharRW;
 
 /// Type of action on file
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -172,7 +172,7 @@ fn make_file_name(
                 )?;
                 // skip files with no name
                 if buf.len() == 0 {
-                    return Ok(())
+                    return Ok(());
                 }
                 (i.action, buf.as_str())
             }
@@ -298,7 +298,11 @@ fn make_expr_buf<R: Read, W: Write>(
 ///
 /// #### Used by:
 /// `make_expr_buf`, `read_condition`
-fn read_exprs<R: Read, W: Write>(rw: &mut CharRW<R, W>, vars: &HashMap<String, String>, out: &mut String) -> Result<bool> {
+fn read_exprs<R: Read, W: Write>(
+    rw: &mut CharRW<R, W>,
+    vars: &HashMap<String, String>,
+    out: &mut String,
+) -> Result<bool> {
     while !matches!(rw.cur, Char('}') | Char(':') | Eof | NoData) {
         read_expr(rw, vars, out)?;
     }
@@ -430,7 +434,7 @@ fn read_variable<R: Read, W: Write>(
 fn read_condition<R: Read, W: Write>(
     rw: &mut CharRW<R, W>,
     vars: &HashMap<String, String>,
-    out: &mut String
+    out: &mut String,
 ) -> Result<()> {
     rw.read()?;
     if out.len() == 0 {

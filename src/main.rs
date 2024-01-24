@@ -1,156 +1,31 @@
+use args::{Action, Args, PromptAnswer};
 use dirs::config_dir;
 use eyre::{Report, Result};
 use maker::{copy_dir, create_template, load_template};
-use termal::printcln;
 use std::{
-    collections::HashMap,
     env,
     fs::{read_dir, remove_dir_all},
     io::{stdin, stdout, Write},
-    path::Path
+    path::Path,
 };
-use Action::*;
+use termal::printcln;
 
-mod maker;
+mod args;
 mod char_rw;
-
-enum Action<'a> {
-    Help,
-    Create((&'a str, &'a str)),
-    Load((&'a str, &'a str)),
-    Remove(&'a str),
-    List,
-    Edit((&'a str, &'a str)),
-}
-
-enum PromptAnswer {
-    Yes,
-    No,
-    Ask
-}
+mod maker;
 
 fn main() -> Result<()> {
     let args: Vec<_> = env::args().collect();
-
-    let mut args = args[1..].iter();
-    let mut action = Help;
-
-    let mut vars = HashMap::<String, String>::new();
-
-    let mut answer = PromptAnswer::Ask;
-
-    // process the arguments
-    while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "-h" | "--help" => action = Help,
-            "-c" | "--create" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected new template name after option '{arg}'"
-                )))?;
-                action = Create((name, "./"));
-            }
-            "-cf" | "--create-from" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected new template name and source directory \
-                    after option '{arg}'"
-                )))?;
-                let src = args.next().ok_or(Report::msg(format!(
-                    "Expected source directory adter option '{arg}' \
-                    and template name"
-                )))?;
-                action = Create((name, src));
-            }
-            "--load" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected existing template name after option '{arg}'"
-                )))?;
-                action = Load((name, "./"))
-            }
-            "-lt" | "--load-to" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected existing template name and destination \
-                    directory after option '{arg}'"
-                )))?;
-                let dest = args.next().ok_or(Report::msg(format!(
-                    "Expected destination directory adter option '{arg}' \
-                    and template name"
-                )))?;
-                action = Load((name, dest));
-            }
-            "-l" | "--list" => action = List,
-            "-r" | "--remove" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected existing template name after option {arg}"
-                )))?;
-                action = Remove(name);
-            }
-            "-e" | "--edit" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected existing template name after option {arg}"
-                )))?;
-                action = Edit((name, "./"));
-            }
-            "-ei" | "--edit-in" => {
-                let name = args.next().ok_or(Report::msg(format!(
-                    "Expected existing template name after option {arg}"
-                )))?;
-                let dir = args.next().ok_or(Report::msg(format!(
-                    "Expected directory after option {arg} and template name"
-                )))?;
-                action = Edit((name, dir));
-            },
-            "-p" | "--prompt-answer" => {
-                let answ = args.next().ok_or(Report::msg(format!(
-                    "Expected 'yes', 'no' or 'ask' after option {arg}"
-                )))?;
-                match answ.to_lowercase().as_str() {
-                    "yes" => answer = PromptAnswer::Yes,
-                    "no" => answer = PromptAnswer::No,
-                    "ask" => answer = PromptAnswer::Ask,
-                    _ => return Err(Report::msg(format!(
-                        "Expected 'yes', 'no' or 'ask' after option {arg}"
-                    ))),
-                }
-            },
-            "-py" => answer = PromptAnswer::Yes,
-            "-pn" => answer = PromptAnswer::No,
-            "-pa" => answer = PromptAnswer::Ask,
-            _ => {
-                if arg.starts_with("-D") {
-                    let arg = &arg[2..];
-                    if let Some(p) =
-                        arg.as_bytes().iter().position(|b| (*b as char) == '=')
-                    {
-                        vars.insert(
-                            arg[..p].to_owned(),
-                            arg[(p + 1)..].to_owned(),
-                        );
-                    } else {
-                        vars.insert(arg.to_owned(), " ".to_owned());
-                    }
-                    continue;
-                }
-                if arg.starts_with("-") {
-                    return Err(Report::msg(format!(
-                        "Invalid option '{}'. If you ment to load template \
-                        use the option '--load' for templates that start with \
-                        '-'",
-                        arg
-                    )))
-                }
-                action = Load((&arg, "./"))
-            }
-        }
-    }
+    let args = Args::parse(args.iter().skip(1).map(|a| a.as_str()))?;
 
     // Do what the arguments specify
-    match action {
-        Create(n) => create(n.0, n.1, answer)?,
-        Load(n) => load(n.0, n.1, vars, answer)?,
-        Remove(n) => remove(n)?,
-        Edit(n) => edit(n.0, n.1, answer)?,
-        Help => help(),
-        List => list()?,
+    match &args.action {
+        Action::Create { name, path } => create(name, path, args)?,
+        Action::Load { name, path } => load(name, path, args)?,
+        Action::Remove(n) => remove(n)?,
+        Action::Edit { name, path } => edit(name, path, args)?,
+        Action::Help | Action::None => help(),
+        Action::List => list()?,
     }
 
     Ok(())
@@ -158,14 +33,17 @@ fn main() -> Result<()> {
 
 /// Creates new template with the name `name` from the directory `src` in the
 /// default template folder.
-fn create(name: &str, src: &str, answ: PromptAnswer) -> Result<()> {
+fn create(name: &str, src: &str, args: Args) -> Result<()> {
     let tdir = get_template_dir(name)?;
 
     if Path::new(&tdir).exists() {
-        if prompt_yn(&format!(
-            "Template with the name '{name}' already \
+        if prompt_yn(
+            &format!(
+                "Template with the name '{name}' already \
             exists.\nDo you want to overwrite it? [y/N]: "
-        ), answ)?
+            ),
+            args.prompt_answer,
+        )?
         .is_none()
         {
             return Ok(());
@@ -178,20 +56,23 @@ fn create(name: &str, src: &str, answ: PromptAnswer) -> Result<()> {
 
 /// Loads template with the name `src` to the directory `dest`. `vars` can
 /// add/override variables in the template config file.
-fn load(name: &str, dest: &str, vars: HashMap<String, String>, answ: PromptAnswer) -> Result<()> {
+fn load(name: &str, dest: &str, args: Args) -> Result<()> {
     // true if the directory exists and isn't empty
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
-        if prompt_yn(&format!(
-            "the directory {dest} is not empty.\n\
+        if prompt_yn(
+            &format!(
+                "the directory {dest} is not empty.\n\
             Do you want to load the template anyway? [y/N]: "
-        ), answ)?
+            ),
+            args.prompt_answer,
+        )?
         .is_none()
         {
             return Ok(());
         }
     }
 
-    load_template(&get_template_dir(name)?, dest, vars)
+    load_template(&get_template_dir(name)?, dest, args.vars)
 }
 
 /// Deletes template with the name `name`
@@ -201,12 +82,15 @@ fn remove(name: &str) -> Result<()> {
 }
 
 /// Copies the template with the name `name` to the directory `dest`.
-fn edit(name: &str, dest: &str, answ: PromptAnswer) -> Result<()> {
+fn edit(name: &str, dest: &str, args: Args) -> Result<()> {
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
-        if prompt_yn(&format!(
-            "the directory {dest} is not empty.\n\
+        if prompt_yn(
+            &format!(
+                "the directory {dest} is not empty.\n\
             Do you want to load the template source anyway? [y/N]: "
-        ), answ)?
+            ),
+            args.prompt_answer,
+        )?
         .is_none()
         {
             return Ok(());
@@ -232,7 +116,7 @@ fn list() -> Result<()> {
 /// function returns Ok(Some(())) otherwise returns Ok(None)
 fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<Option<()>> {
     match answ {
-        PromptAnswer::Ask => {},
+        PromptAnswer::Ask => {}
         PromptAnswer::No => return Ok(None),
         PromptAnswer::Yes => return Ok(Some(())),
     }
@@ -280,35 +164,35 @@ Version {}
   {'y}-h  --help{'_}
     shows this help
 
-  {'y}-c  --create {'w}[template name]{'_}
+  {'y}-c  --create {'w}<template name>{'_}
     creates new template with the name
 
-  {'y}-cf  --create-from {'w}[template name] [template surce directory]{'_}
+  {'y}-cf  --create-from {'w}<template name> <template surce directory>{'_}
     creates new template from the directory with the name
 
-  {'y}--load {'w}[template name]{'_}
+  {'y}--load {'w}<template name>{'_}
     loads the given template
 
-  {'y}-lt  --load-to {'w}[template name] [destination directory]{'_}
+  {'y}-lt  --load-to {'w}<template name> <destination directory>{'_}
     loads the given template into the destination directory (will be created
     if it doesn't exist)
 
-  {'y}-r  --remove {'w}[template name]{'_}
+  {'y}-r  --remove {'w}<template name>{'_}
     removes the given template
 
   {'y}-l  --list{'_}
     lists all the template names
 
-  {'y}-D{'w}[variable name]{'gr}=[value]{'_}
+  {'y}-D{'w}<variable name>{'gr}[=value]{'_}
     defines/redefines a variable
 
-  {'y}-e  --edit {'w}[template name]{'_}
+  {'y}-e  --edit {'w}<template name>{'_}
     loads template source to this directory
 
-  {'y}-ei --edit-in {'w}[template name] [directory]{'_}
+  {'y}-ei --edit-in {'w}<template name> <directory>{'_}
     loads template source to the given direcotry
 
-  {'y}-p  --prompt {'w}yes|no|ask{'_}
+  {'y}-p  --prompt {'w}<yes | no | ask>{'_}
     sets the default answer when prompting. 'yes' will always answer with 'y',
     'no' will always answer with 'n', 'ask' is default - always ask
 
