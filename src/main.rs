@@ -1,6 +1,7 @@
 use dirs::config_dir;
 use eyre::{Report, Result};
 use maker::{copy_dir, create_template, load_template};
+use termal::printcln;
 use std::{
     collections::HashMap,
     env,
@@ -264,54 +265,54 @@ fn get_template_dir(name: &str) -> Result<String> {
 /// Prints colorful help to the stdout.
 fn help() {
     let v: Option<&str> = option_env!("CARGO_PKG_VERSION");
-    println!(
-        "Welcome in {g}{i}makemake{r} by {}{}{}
+    printcln!(
+        "Welcome in {'g i}makemake{'_} by {}{'_}
 Version {}
 
-{g}Usage:{r}
-  {w}makemake{r} {w}[template name]{r} {d}[options]{r}
+{'g}Usage:
+  {'w}makemake <template name> {'gr}[options]{'_}
     loads template
 
-  {w}makemake{r} {d}[options]{r}
+  {'w}makemake {'gr}[options]{'_}
     bahaves according to the options, with no options shows this help
 
-{g}Options:{r}
-  {y}-h  --help{r}
+{'g}Options:
+  {'y}-h  --help{'_}
     shows this help
 
-  {y}-c  --create{r} {w}[template name]{r}
+  {'y}-c  --create {'w}[template name]{'_}
     creates new template with the name
 
-  {y}-cf  --create-from {w}[template name] [template surce directory]{r}
+  {'y}-cf  --create-from {'w}[template name] [template surce directory]{'_}
     creates new template from the directory with the name
 
-  {y}--load{r} {w}[template name]{r}
+  {'y}--load {'w}[template name]{'_}
     loads the given template
 
-  {y}-lt  --load-to{r} {w}[template name] [destination directory]{r}
+  {'y}-lt  --load-to {'w}[template name] [destination directory]{'_}
     loads the given template into the destination directory (will be created
     if it doesn't exist)
 
-  {y}-r  --remove{r} {w}[template name]{r}
+  {'y}-r  --remove {'w}[template name]{'_}
     removes the given template
 
-  {y}-l  --list{r}
+  {'y}-l  --list{'_}
     lists all the template names
 
-  {y}-D{w}[variable name]{d}=[value]{r}
+  {'y}-D{'w}[variable name]{'gr}=[value]{'_}
     defines/redefines a variable
 
-  {y}-e  --edit{r} {w}[template name]{r}
+  {'y}-e  --edit {'w}[template name]{'_}
     loads template source to this directory
 
-  {y}-ei --edit-in{r} {w}[template name] [directory]{r}
+  {'y}-ei --edit-in {'w}[template name] [directory]{'_}
     loads template source to the given direcotry
 
-  {y}-p  --prompt{r} {w}yes|no|ask{r}
+  {'y}-p  --prompt {'w}yes|no|ask{'_}
     sets the default answer when prompting. 'yes' will always answer with 'y',
     'no' will always answer with 'n', 'ask' is default - always ask
 
-  {y}-py{r}, {y}-pn{r}, {y}-pa{r}
+  {'y}-py{'_}, {'y}-pn{'_}, {'y}-pa{'_}
     same as '-p yes', '-p no' and '-p ask' respectively
 
 In case that multiple options that specify the same setting are used, only
@@ -320,15 +321,7 @@ the last is taken into account. e.g. 'makemake vscm -e vscm' is same as
 'makemake vscm -c vscm' is same as 'makemake -c vscm'
 ",
         // BonnyAD9 gradient in 3 strings
-        "\x1b[38;2;250;50;170mB\x1b[38;2;240;50;180mo\x1b[38;2;230;50;190mn",
-        "\x1b[38;2;220;50;200mn\x1b[38;2;210;50;210my\x1b[38;2;200;50;220mA",
-        "\x1b[38;2;190;50;230mD\x1b[38;2;180;50;240m9\x1b[0m",
-        v.unwrap_or("unknown"),
-        g = "\x1b[92m", // green
-        i = "\x1b[23m", // italic
-        r = "\x1b[0m",  // reset
-        w = "\x1b[97m", // white
-        d = "\x1b[90m", // dark gray
-        y = "\x1b[93m"  // yellow
+        termal::gradient("BonnyAD9", (250, 50, 170), (180, 50, 240)),
+        v.unwrap_or("unknown")
     );
 }
