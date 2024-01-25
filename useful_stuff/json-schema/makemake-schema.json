@@ -37,7 +37,7 @@
             "description": "Default values for variables",
             "type": "object",
             "patternProperties": {
-                "^[^\\$\\ \t\r\n\\?:\\{\\}\\(\\)\\\\]+$": {
+                "^[0-9A-Za-z_]+$": {
                     "type": "string"
                 }
             },

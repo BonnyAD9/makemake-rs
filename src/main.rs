@@ -11,8 +11,14 @@ use std::{
 use termal::printcln;
 
 mod args;
+mod ast;
 mod char_rw;
+mod err;
+mod lexer;
 mod maker;
+mod writer;
+mod parser;
+mod maker2;
 
 fn main() -> Result<()> {
     let args: Vec<_> = env::args().collect();

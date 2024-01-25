@@ -6,6 +6,7 @@ use std::{
     collections::HashMap,
     fs::{copy, create_dir_all, read_dir, File},
     io::{Read, Write},
+    path::PathBuf,
 };
 use utf8_read::Char::{Char, Eof, NoData};
 
@@ -43,7 +44,7 @@ fn default_file_info_action() -> MakeType {
 #[derive(Serialize, Deserialize)]
 struct MakeConfig {
     #[serde(default)]
-    files: HashMap<String, MakeInfoEnum>,
+    files: HashMap<PathBuf, MakeInfoEnum>,
     #[serde(default)]
     vars: HashMap<String, String>,
 }
@@ -127,9 +128,8 @@ fn make_dir(
         // Path relative to the template
         let frel =
             diff_paths(fpath, base).ok_or(Report::msg("Invalid base path"))?;
-        let frel = frel.to_str().ok_or(Report::msg("Invalid path"))?;
 
-        if let Some(c) = conf.files.get(frel) {
+        if let Some(c) = conf.files.get(&frel) {
             // expand the file and its name if it is in config
             make_file_name(c, &conf.vars, fpath, dest, dname)?;
         } else {
@@ -271,9 +271,6 @@ fn make_expr<R: Read, W: Write>(
     make_expr_buf(rw, vars, &mut buf)?;
     rw.write_str(&buf)
 }
-
-// TODO: Unite make_expr and make_expr_buf (maybe edit the CharRW to be able
-// to output to a string)
 
 /// Evaluates single expression (without the '${') from read of `rw` and
 /// appends it to `out`.
