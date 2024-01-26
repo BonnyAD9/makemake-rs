@@ -15,8 +15,6 @@ pub enum Error {
     #[error("expected {}", .0)]
     ParserExpected(&'static str),
     #[error("{}", .0)]
-    Unsupported(&'static str),
-    #[error("{}", .0)]
     Msg(Cow<'static, str>),
     #[error(transparent)]
     Arg(#[from] ArgError),

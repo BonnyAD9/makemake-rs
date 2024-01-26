@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [ "--color", "never" ],
+            "args": [ "-c", "test", "-py", "-d", "test/template" ],
             "cwd": "${workspaceFolder}"
         },
         {

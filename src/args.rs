@@ -172,7 +172,9 @@ impl<'a> Args<'a> {
                         }
                     };
                 }
-                arg if arg.starts_with("--color=") || arg.starts_with("--colour=") => {
+                arg if arg.starts_with("--color=")
+                    || arg.starts_with("--colour=") =>
+                {
                     let (_, value) = arg.split_once('=').unwrap();
                     res.use_color = match value.to_lowercase().as_str() {
                         "auto" => Yna::Auto,
@@ -240,19 +242,28 @@ impl<'a> Args<'a> {
 
     fn unused_template(&self) {
         if let Some(t) = self.template {
-            eprintmcln!(self.use_color(), "{'m}warning:{'_} unused template argument '{t}'");
+            eprintmcln!(
+                self.use_color(),
+                "{'m}warning:{'_} unused template argument '{t}'"
+            );
         }
     }
 
     fn unused_directory(&self) {
         if let Some(d) = self.directory {
-            eprintmcln!(self.use_color(), "{'m}warning:{'_} unused directory argument '{d}'");
+            eprintmcln!(
+                self.use_color(),
+                "{'m}warning:{'_} unused directory argument '{d}'"
+            );
         }
     }
 
     fn unused_vars(&self) {
         if !self.vars.is_empty() {
-            eprintmcln!(self.use_color(), "{'m}warning:{'_} variables are set but unused.");
+            eprintmcln!(
+                self.use_color(),
+                "{'m}warning:{'_} variables are set but unused."
+            );
         }
     }
 

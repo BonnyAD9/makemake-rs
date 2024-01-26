@@ -3,7 +3,12 @@ use dirs::config_dir;
 use err::Result;
 use maker::{copy_dir, create_template, load_template};
 use std::{
-    borrow::Cow, env, fs::{read_dir, remove_dir_all}, io::{stderr, stdin, stdout, IsTerminal, Write}, path::{Path, PathBuf}, process::ExitCode
+    borrow::Cow,
+    env,
+    fs::{read_dir, remove_dir_all},
+    io::{stderr, stdin, stdout, IsTerminal, Write},
+    path::{Path, PathBuf},
+    process::ExitCode,
 };
 use termal::{eprintmcln, printmcln};
 

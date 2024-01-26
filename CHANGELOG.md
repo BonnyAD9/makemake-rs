@@ -11,6 +11,7 @@
 - More ways to use CLI
 - Warn of unused arguments
 - Choose whether to print with colors
+- Support symlinks
 
 ## v1.1.1
 - Prepare for AUR release

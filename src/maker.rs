@@ -2,11 +2,13 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fmt::Write,
-    fs::{self, create_dir_all, read_dir, File},
+    fs::{self, create_dir_all, read_dir, read_link, File},
     io::{BufReader, BufWriter},
+    os::unix::fs::symlink,
     path::{Path, PathBuf},
 };
 
+use path_absolutize::Absolutize;
 use result::OptionResultExt;
 use serde::{Deserialize, Serialize};
 use utf8_chars::BufReadCharsExt;
@@ -105,8 +107,11 @@ impl MakeConfig {
             vec![(rsrc.as_ref().into(), rdst.as_ref().into())];
 
         while let Some((src, dst)) = dirs.pop() {
-            let meta = src.metadata()?;
-            if meta.is_file() {
+            let meta = src.symlink_metadata()?;
+            if meta.is_symlink() {
+                let adr = read_link(&src)?;
+                symlink(adr, dst)?;
+            } else if meta.is_file() {
                 // src is always subpath of rsrc
                 // let srel = diff_paths(&src, &rsrc).unwrap();
                 let srel = src.strip_prefix(&rsrc)?;
@@ -129,10 +134,6 @@ impl MakeConfig {
                     let name = f.file_name();
                     dirs.push((path.into(), dst.join(name).into()))
                 }
-            } else if meta.is_symlink() {
-                return Err(Error::Unsupported(
-                    "symlinks in templates are not supported",
-                ));
             }
         }
 
@@ -207,17 +208,20 @@ impl MakeConfig {
     }
 }
 
-pub fn copy_dir<P1, P2>(src: P1, dst: P2) -> Result<()>
+pub fn copy_dir<P1, P2>(rsrc: P1, rdst: P2) -> Result<()>
 where
     P1: AsRef<Path>,
     P2: AsRef<Path>,
 {
     let mut dirs: Vec<(Cow<_>, Cow<_>)> =
-        vec![(src.as_ref().into(), dst.as_ref().into())];
+        vec![(rsrc.as_ref().into(), rdst.as_ref().into())];
 
     while let Some((src, dst)) = dirs.pop() {
-        let meta = src.metadata()?;
-        if meta.is_file() {
+        let meta = src.symlink_metadata()?;
+        if meta.is_symlink() {
+            let adr = read_link(&src)?;
+            symlink(adr, dst)?;
+        } else if meta.is_file() {
             fs::copy(src, dst)?;
         } else if meta.is_dir() {
             create_dir_all(&dst)?;
@@ -228,10 +232,6 @@ where
                 let name = f.file_name();
                 dirs.push((path.into(), dst.join(name).into()));
             }
-        } else if meta.is_symlink() {
-            return Err(Error::Unsupported(
-                "symlinks in templates are not supported",
-            ));
         }
     }
 
