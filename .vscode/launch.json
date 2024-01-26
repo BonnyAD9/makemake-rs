@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [ "-lt", "vscm", "test" ],
+            "args": [ "--color", "never" ],
             "cwd": "${workspaceFolder}"
         },
         {

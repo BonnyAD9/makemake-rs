@@ -1,15 +1,11 @@
-use args::{Action, Args, PromptAnswer};
+use args::{Action, Args, Yna};
 use dirs::config_dir;
 use err::Result;
 use maker::{copy_dir, create_template, load_template};
 use std::{
-    env,
-    fs::{read_dir, remove_dir_all},
-    io::{stdin, stdout, Write},
-    path::{Path, PathBuf},
-    process::ExitCode,
+    borrow::Cow, env, fs::{read_dir, remove_dir_all}, io::{stderr, stdin, stdout, IsTerminal, Write}, path::{Path, PathBuf}, process::ExitCode
 };
-use termal::{eprintcln, printcln};
+use termal::{eprintmcln, printmcln};
 
 use crate::err::Error;
 
@@ -25,7 +21,7 @@ fn main() -> ExitCode {
     match start() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintcln!("{'r}error:{'_} {e}");
+            eprintmcln!(stderr().is_terminal(), "{'r}error:{'_} {e}");
             ExitCode::FAILURE
         }
     }
@@ -43,7 +39,7 @@ fn start() -> Result<()> {
         Action::Load => load(args)?,
         Action::Remove => remove(args)?,
         Action::Edit => edit(args)?,
-        Action::Help => help(),
+        Action::Help => help(args),
         Action::List => list()?,
     }
 
@@ -147,11 +143,11 @@ fn list() -> Result<()> {
 /// enter either 'y' or 'n'. If the user enters something other than
 /// 'y' or 'n' the function reurns Err. If the user enters 'y' the
 /// function returns Ok(Some(())) otherwise returns Ok(None)
-fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<bool> {
+fn prompt_yn(prompt: &str, answ: Yna) -> Result<bool> {
     match answ {
-        PromptAnswer::Ask => {}
-        PromptAnswer::No => return Ok(false),
-        PromptAnswer::Yes => return Ok(true),
+        Yna::Auto => {}
+        Yna::No => return Ok(false),
+        Yna::Yes => return Ok(true),
     }
     print!("{prompt}");
     _ = stdout().flush();
@@ -176,10 +172,17 @@ fn get_template_dir(name: &str) -> Result<PathBuf> {
 }
 
 /// Prints colorful help to the stdout.
-fn help() {
+fn help(args: Args) {
     let v: Option<&str> = option_env!("CARGO_PKG_VERSION");
-    printcln!(
-        "Welcome in {'g i}makemake{'_} by {}{'_}
+    let signature: Cow<str> = if args.use_color() {
+        termal::gradient("BonnyAD9", (250, 50, 170), (180, 50, 240)).into()
+    } else {
+        "BonnyAD9".into()
+    };
+
+    printmcln!(
+        args.use_color(),
+        "Welcome in {'g i}makemake{'_} by {signature}{'_}
 Version {}
 
 {'g}Usage:
@@ -240,11 +243,13 @@ Version {}
     Loads template source to the given direcotry. (Equivalent to
     '-e -t <template name> -d <template source directory>'.)
 
+  {'y}--color  --colour {'w}<auto | always | never>
+  {'y}--color  --colour{'w}=<auto | always | never>{'_}
+    Determines whether to use color when printing.
+
 Ehen option can be overriden, it means that it can be specified multiple
 times, and the last occurence takes effect.
 ",
-        // BonnyAD9 gradient in 3 strings
-        termal::gradient("BonnyAD9", (250, 50, 170), (180, 50, 240)),
         v.unwrap_or("unknown")
     );
 }

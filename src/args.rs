@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    io::{stdout, IsTerminal},
+};
 
-use termal::eprintcln;
+use termal::eprintmcln;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -24,11 +27,12 @@ pub enum ArgError {
 
 pub type ArgResult<T> = Result<T, ArgError>;
 
-#[derive(Clone, Copy)]
-pub enum PromptAnswer {
+/// Yes/No/Auto
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Yna {
     Yes,
     No,
-    Ask,
+    Auto,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -42,12 +46,12 @@ pub enum Action {
 }
 
 pub struct Args<'a> {
-    pub cnt: usize,
+    pub use_color: Yna,
     pub template: Option<&'a str>,
     pub directory: Option<&'a str>,
     pub action: Option<Action>,
     pub vars: HashMap<String, String>,
-    pub prompt_answer: PromptAnswer,
+    pub prompt_answer: Yna,
 }
 
 struct ArgIterator<'a, I>
@@ -91,18 +95,17 @@ impl<'a> Args<'a> {
         I: Iterator<Item = &'a str>,
     {
         let mut res = Self {
-            cnt: 0,
+            use_color: Yna::Auto,
             template: None,
             directory: None,
             action: None,
             vars: HashMap::new(),
-            prompt_answer: PromptAnswer::Ask,
+            prompt_answer: Yna::Auto,
         };
 
         let mut args = ArgIterator::new(args);
 
         while let Some(arg) = args.next() {
-            res.cnt += 1;
             match arg {
                 "-h" | "--help" | "-?" => res.set_action(Action::Help)?,
                 "-c" | "--create" => res.set_action(Action::Create)?,
@@ -141,9 +144,9 @@ impl<'a> Args<'a> {
                 "-p" | "--prompt-answer" => {
                     let answ = args.expect("'yes', 'no' or 'ask'")?;
                     res.prompt_answer = match answ.to_lowercase().as_str() {
-                        "yes" => PromptAnswer::Yes,
-                        "no" => PromptAnswer::No,
-                        "ask" => PromptAnswer::Ask,
+                        "yes" => Yna::Yes,
+                        "no" => Yna::No,
+                        "ask" => Yna::Auto,
                         _ => {
                             return Err(ArgError::MissingAfter {
                                 exp: "'yes', 'no' or 'ask'",
@@ -152,12 +155,40 @@ impl<'a> Args<'a> {
                         }
                     }
                 }
-                "-py" => res.prompt_answer = PromptAnswer::Yes,
-                "-pn" => res.prompt_answer = PromptAnswer::No,
-                "-pa" => res.prompt_answer = PromptAnswer::Ask,
+                "-py" => res.prompt_answer = Yna::Yes,
+                "-pn" => res.prompt_answer = Yna::No,
+                "-pa" => res.prompt_answer = Yna::Auto,
+                "--color" | "--colour" => {
+                    let answ = args.expect("'auto', 'always', 'never'")?;
+                    res.use_color = match answ.to_lowercase().as_str() {
+                        "auto" => Yna::Auto,
+                        "always" => Yna::Yes,
+                        "never" => Yna::No,
+                        _ => {
+                            return Err(ArgError::MissingAfter {
+                                exp: "'auto', 'always' or 'never'",
+                                opt: arg.to_owned(),
+                            });
+                        }
+                    };
+                }
+                arg if arg.starts_with("--color=") || arg.starts_with("--colour=") => {
+                    let (_, value) = arg.split_once('=').unwrap();
+                    res.use_color = match value.to_lowercase().as_str() {
+                        "auto" => Yna::Auto,
+                        "always" => Yna::Yes,
+                        "never" => Yna::No,
+                        _ => {
+                            return Err(ArgError::MissingAfter {
+                                exp: "'auto', 'always' or 'never'",
+                                opt: arg.to_owned(),
+                            });
+                        }
+                    };
+                }
                 arg if arg.starts_with("-D") => {
                     let arg = &arg[2..];
-                    if let Some((name, value)) = arg.split_once("=") {
+                    if let Some((name, value)) = arg.split_once('=') {
                         res.vars.insert(name.to_owned(), value.to_owned());
                     } else {
                         res.vars.insert(arg.to_owned(), String::new());
@@ -170,6 +201,14 @@ impl<'a> Args<'a> {
             } // match
         } // while
 
+        if res.use_color == Yna::Auto {
+            res.use_color = if stdout().is_terminal() {
+                Yna::Yes
+            } else {
+                Yna::No
+            };
+        }
+
         Ok(res)
     } // fn parse
 
@@ -179,7 +218,7 @@ impl<'a> Args<'a> {
                 self.unused_template();
                 self.unused_directory();
                 self.unused_vars();
-            },
+            }
             Action::Create => {
                 self.unused_vars();
             }
@@ -187,12 +226,12 @@ impl<'a> Args<'a> {
             Action::Remove => {
                 self.unused_directory();
                 self.unused_vars();
-            },
+            }
             Action::List => {
                 self.unused_template();
                 self.unused_directory();
                 self.unused_vars();
-            },
+            }
             Action::Edit => {
                 self.unused_vars();
             }
@@ -201,20 +240,24 @@ impl<'a> Args<'a> {
 
     fn unused_template(&self) {
         if let Some(t) = self.template {
-            eprintcln!("{'m}warning:{'_} unused template argument '{t}'");
+            eprintmcln!(self.use_color(), "{'m}warning:{'_} unused template argument '{t}'");
         }
     }
 
     fn unused_directory(&self) {
         if let Some(d) = self.directory {
-            eprintcln!("{'m}warning:{'_} unused directory argument '{d}'");
+            eprintmcln!(self.use_color(), "{'m}warning:{'_} unused directory argument '{d}'");
         }
     }
 
     fn unused_vars(&self) {
         if !self.vars.is_empty() {
-            eprintcln!("{'m}warning:{'_} variables are set but unused.");
+            eprintmcln!(self.use_color(), "{'m}warning:{'_} variables are set but unused.");
         }
+    }
+
+    pub fn use_color(&self) -> bool {
+        self.use_color == Yna::Yes
     }
 
     pub fn get_directory(&self) -> &'a str {
@@ -226,7 +269,7 @@ impl<'a> Args<'a> {
     }
 
     pub fn get_action(&self) -> Action {
-        if self.cnt == 0 {
+        if self.template.is_none() {
             Action::Help
         } else {
             self.action.unwrap_or(Action::Load)
