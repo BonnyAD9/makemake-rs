@@ -6,7 +6,7 @@ use std::{
     env,
     fs::{read_dir, remove_dir_all},
     io::{stdin, stdout, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 use termal::printcln;
 
@@ -43,42 +43,45 @@ fn create(name: &str, src: &str, args: Args) -> Result<()> {
     let tdir = get_template_dir(name)?;
 
     if Path::new(&tdir).exists() {
-        if prompt_yn(
+        if !prompt_yn(
             &format!(
                 "Template with the name '{name}' already \
             exists.\nDo you want to overwrite it? [y/N]: "
             ),
             args.prompt_answer,
-        )?
-        .is_none()
-        {
+        )? {
             return Ok(());
         }
         remove_dir_all(&tdir)?;
     }
 
-    create_template(src, &tdir)
+    create_template(src, tdir)
 }
 
 /// Loads template with the name `src` to the directory `dest`. `vars` can
 /// add/override variables in the template config file.
 fn load(name: &str, dest: &str, args: Args) -> Result<()> {
+    let template = get_template_dir(name)?;
+    if !template.exists() {
+        return Err(Error::Msg(
+            format!("There is no existing template '{name}'").into(),
+        ));
+    }
+
     // true if the directory exists and isn't empty
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
-        if prompt_yn(
+        if !prompt_yn(
             &format!(
                 "the directory {dest} is not empty.\n\
             Do you want to load the template anyway? [y/N]: "
             ),
             args.prompt_answer,
-        )?
-        .is_none()
-        {
+        )? {
             return Ok(());
         }
     }
 
-    load_template(&get_template_dir(name)?, dest, args.vars)
+    load_template(template, dest, args.vars)
 }
 
 /// Deletes template with the name `name`
@@ -89,20 +92,25 @@ fn remove(name: &str) -> Result<()> {
 
 /// Copies the template with the name `name` to the directory `dest`.
 fn edit(name: &str, dest: &str, args: Args) -> Result<()> {
+    let template = get_template_dir(name)?;
+    if !template.exists() {
+        return Err(Error::Msg(
+            format!("There is no existing template '{name}'").into(),
+        ));
+    }
+
     if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
-        if prompt_yn(
+        if !prompt_yn(
             &format!(
                 "the directory {dest} is not empty.\n\
             Do you want to load the template source anyway? [y/N]: "
             ),
             args.prompt_answer,
-        )?
-        .is_none()
-        {
+        )? {
             return Ok(());
         }
     }
-    copy_dir(get_template_dir(name)?.as_str(), dest)
+    copy_dir(template, dest)
 }
 
 /// Prints all the template name to the stdout.
@@ -117,11 +125,11 @@ fn list() -> Result<()> {
 /// enter either 'y' or 'n'. If the user enters something other than
 /// 'y' or 'n' the function reurns Err. If the user enters 'y' the
 /// function returns Ok(Some(())) otherwise returns Ok(None)
-fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<Option<()>> {
+fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<bool> {
     match answ {
         PromptAnswer::Ask => {}
-        PromptAnswer::No => return Ok(None),
-        PromptAnswer::Yes => return Ok(Some(())),
+        PromptAnswer::No => return Ok(false),
+        PromptAnswer::Yes => return Ok(true),
     }
     print!("{prompt}");
     _ = stdout().flush();
@@ -130,23 +138,19 @@ fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<Option<()>> {
     let conf = conf.trim();
 
     return match conf {
-        "y" | "Y" => Ok(Some(())),
-        "n" | "N" | "" => Ok(None),
+        "y" | "Y" => Ok(true),
+        "n" | "N" | "" => Ok(false),
         _ => Err(Error::Msg(format!("Invalid option {conf}").into())),
     };
 }
 
 /// Gets the directory in which the template with the name `name` is stored.
-fn get_template_dir(name: &str) -> Result<String> {
-    let config =
+fn get_template_dir(name: &str) -> Result<PathBuf> {
+    let mut config =
         config_dir().ok_or(Error::Msg("Can't get config directory".into()))?;
-
-    Ok(config
-        .to_str()
-        .ok_or(Error::Msg("Invalid path to config".into()))?
-        .to_owned()
-        + "/makemake/templates/"
-        + name)
+    config.push("makemake/templates");
+    config.push(name);
+    Ok(config)
 }
 
 /// Prints colorful help to the stdout.

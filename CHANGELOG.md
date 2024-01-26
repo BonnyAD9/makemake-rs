@@ -6,6 +6,7 @@
 - If now checks whether variable is defined instead of whether the value is
   empty
 - Builtin os variables now expand to the name of the os instead of to `'true'`
+- Check for errors before asking for confirmation
 
 ## v1.1.1
 - Prepare for AUR release

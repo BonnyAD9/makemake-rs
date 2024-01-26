@@ -48,9 +48,10 @@ struct FileInfo {
     name: String,
 }
 
-pub fn create_template<P>(src: P, out: P) -> Result<()>
+pub fn create_template<P1, P2>(src: P1, out: P2) -> Result<()>
 where
-    P: AsRef<Path>,
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
 {
     copy_dir(src, out)
 }
@@ -85,13 +86,15 @@ impl MakeConfig {
         #[cfg(target_os = "linux")]
         self.vars.insert("_LINUX".to_owned(), "linux".to_owned());
         #[cfg(target_os = "windows")]
-        self.vars.insert("_WINDOWS".to_owned(), "windows".to_owned());
+        self.vars
+            .insert("_WINDOWS".to_owned(), "windows".to_owned());
         #[cfg(target_os = "macos")]
         self.vars.insert("_MACOS".to_owned(), "macos".to_owned());
         #[cfg(target_os = "ios")]
         self.vars.insert("_IOS".to_owned(), "ios".to_owned());
         #[cfg(target_os = "freebsd")]
-        self.vars.insert("_FREEBSD".to_owned(), "freebsd".to_owned());
+        self.vars
+            .insert("_FREEBSD".to_owned(), "freebsd".to_owned());
     }
 
     fn make_dir<P>(&self, rsrc: P, rdst: P) -> Result<()>
@@ -204,9 +207,10 @@ impl MakeConfig {
     }
 }
 
-pub fn copy_dir<P>(src: P, dst: P) -> Result<()>
+pub fn copy_dir<P1, P2>(src: P1, dst: P2) -> Result<()>
 where
-    P: AsRef<Path>,
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
 {
     let mut dirs: Vec<(Cow<_>, Cow<_>)> =
         vec![(src.as_ref().into(), dst.as_ref().into())];
