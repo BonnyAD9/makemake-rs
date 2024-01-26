@@ -43,7 +43,10 @@ where
     }
 }
 
-impl<'a, I> From<&'a mut I> for Lexer<'a, I> where I: Iterator<Item = Result<char>> {
+impl<'a, I> From<&'a mut I> for Lexer<'a, I>
+where
+    I: Iterator<Item = Result<char>>,
+{
     fn from(value: &'a mut I) -> Self {
         Self {
             cur: None,
@@ -72,15 +75,15 @@ where
             Some('}') => {
                 self.cur = None;
                 Ok(Some(Token::CloseBracket))
-            },
+            }
             Some('?') => {
                 self.cur = None;
                 Ok(Some(Token::Question))
-            },
+            }
             Some(':') => {
                 self.cur = None;
                 Ok(Some(Token::Colon))
-            },
+            }
             Some('\'') => self.read_literal(),
             Some(a) if a.is_alphabetic() || a == '_' => self.read_ident(),
             None => Ok(None),

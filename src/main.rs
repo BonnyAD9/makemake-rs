@@ -108,10 +108,7 @@ fn edit(name: &str, dest: &str, args: Args) -> Result<()> {
 /// Prints all the template name to the stdout.
 fn list() -> Result<()> {
     for f in read_dir(get_template_dir("")?)? {
-        println!(
-            "{}",
-            f?.file_name().to_string_lossy()
-        );
+        println!("{}", f?.file_name().to_string_lossy());
     }
     Ok(())
 }

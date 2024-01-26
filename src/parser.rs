@@ -14,7 +14,10 @@ where
     cur: Option<Token>,
 }
 
-pub fn parse<I>(data: &mut I) -> Result<Expr> where I: Iterator<Item = Result<char>> {
+pub fn parse<I>(data: &mut I) -> Result<Expr>
+where
+    I: Iterator<Item = Result<char>>,
+{
     let lexer: Lexer<I> = data.into();
     let mut parser = Parser::new(lexer);
     parser.parse()

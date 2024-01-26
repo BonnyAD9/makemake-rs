@@ -7,13 +7,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use pathdiff::diff_paths;
 use result::OptionResultExt;
 use serde::{Deserialize, Serialize};
 use utf8_chars::BufReadCharsExt;
 
 use crate::{
-    err::{Error, Result}, parser::parse, writer::ToFmtWrite
+    err::{Error, Result},
+    parser::parse,
+    writer::ToFmtWrite,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -105,9 +106,10 @@ impl MakeConfig {
             let meta = src.metadata()?;
             if meta.is_file() {
                 // src is always subpath of rsrc
-                let srel = diff_paths(&src, &rsrc).unwrap();
+                // let srel = diff_paths(&src, &rsrc).unwrap();
+                let srel = src.strip_prefix(&rsrc)?;
 
-                if let Some(info) = self.files.get(&srel) {
+                if let Some(info) = self.files.get(srel) {
                     self.make_file_name(
                         info,
                         src.into_owned(),
@@ -146,7 +148,10 @@ impl MakeConfig {
             MakeInfo::Info(i) => {
                 if i.name.len() != 0 {
                     let mut name = String::new();
-                    self.expand(&mut i.name.chars().map(|a| Ok(a)), &mut name)?;
+                    self.expand(
+                        &mut i.name.chars().map(|a| Ok(a)),
+                        &mut name,
+                    )?;
                     if name.len() == 0 {
                         MakeType::Ignore
                     } else {

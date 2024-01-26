@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, path::StripPrefixError};
 
 use thiserror::Error;
 
@@ -28,4 +28,6 @@ pub enum Error {
     Fmt(#[from] std::fmt::Error),
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
+    StripPrefix(#[from] StripPrefixError),
 }
