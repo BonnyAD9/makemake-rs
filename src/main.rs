@@ -3,7 +3,11 @@ use dirs::config_dir;
 use err::Result;
 use maker::{copy_dir, create_template, load_template};
 use std::{
-    env, fs::{read_dir, remove_dir_all}, io::{stdin, stdout, Write}, path::{Path, PathBuf}, process::ExitCode
+    env,
+    fs::{read_dir, remove_dir_all},
+    io::{stdin, stdout, Write},
+    path::{Path, PathBuf},
+    process::ExitCode,
 };
 use termal::{eprintcln, printcln};
 
@@ -32,12 +36,12 @@ fn start() -> Result<()> {
     let args = Args::parse(args.iter().skip(1).map(|a| a.as_str()))?;
 
     // Do what the arguments specify
-    match &args.action {
-        Action::Create { name, path } => create(name, path, args)?,
-        Action::Load { name, path } => load(name, path, args)?,
-        Action::Remove(n) => remove(n)?,
-        Action::Edit { name, path } => edit(name, path, args)?,
-        Action::Help | Action::None => help(),
+    match args.get_action() {
+        Action::Create => create(args)?,
+        Action::Load => load(args)?,
+        Action::Remove => remove(args)?,
+        Action::Edit => edit(args)?,
+        Action::Help => help(),
         Action::List => list()?,
     }
 
@@ -46,7 +50,10 @@ fn start() -> Result<()> {
 
 /// Creates new template with the name `name` from the directory `src` in the
 /// default template folder.
-fn create(name: &str, src: &str, args: Args) -> Result<()> {
+fn create(args: Args) -> Result<()> {
+    let name = args.get_template()?;
+    let src = args.get_directory();
+
     let tdir = get_template_dir(name)?;
 
     if Path::new(&tdir).exists() {
@@ -67,7 +74,10 @@ fn create(name: &str, src: &str, args: Args) -> Result<()> {
 
 /// Loads template with the name `src` to the directory `dest`. `vars` can
 /// add/override variables in the template config file.
-fn load(name: &str, dest: &str, args: Args) -> Result<()> {
+fn load(args: Args) -> Result<()> {
+    let name = args.get_template()?;
+    let dest = args.get_directory();
+
     let template = get_template_dir(name)?;
     if !template.exists() {
         return Err(Error::Msg(
@@ -92,13 +102,16 @@ fn load(name: &str, dest: &str, args: Args) -> Result<()> {
 }
 
 /// Deletes template with the name `name`
-fn remove(name: &str) -> Result<()> {
-    remove_dir_all(get_template_dir(name)?)?;
+fn remove(args: Args) -> Result<()> {
+    remove_dir_all(get_template_dir(args.get_template()?)?)?;
     Ok(())
 }
 
 /// Copies the template with the name `name` to the directory `dest`.
-fn edit(name: &str, dest: &str, args: Args) -> Result<()> {
+fn edit(args: Args) -> Result<()> {
+    let name = args.get_template()?;
+    let dest = args.get_directory();
+
     let template = get_template_dir(name)?;
     if !template.exists() {
         return Err(Error::Msg(
@@ -169,54 +182,64 @@ Version {}
 
 {'g}Usage:
   {'w}makemake <template name> {'gr}[options]{'_}
-    loads template
+    Behaves according to the options, by default loads template.
 
   {'w}makemake {'gr}[options]{'_}
-    bahaves according to the options, with no options shows this help
+    Bahaves according to the options, with no options shows this help.
 
 {'g}Options:
   {'y}-h  --help{'_}
-    shows this help
+    Shows this help.
 
-  {'y}-c  --create {'w}<template name>{'_}
-    creates new template with the name
+  {'y}-c  --create{'_}
+    Creates new template.
 
-  {'y}-cf  --create-from {'w}<template name> <template surce directory>{'_}
-    creates new template from the directory with the name
-
-  {'y}--load {'w}<template name>{'_}
-    loads the given template
-
-  {'y}-lt  --load-to {'w}<template name> <destination directory>{'_}
-    loads the given template into the destination directory (will be created
-    if it doesn't exist)
-
-  {'y}-r  --remove {'w}<template name>{'_}
-    removes the given template
+  {'y}-r  --remove{'_}
+    Removes the template.
 
   {'y}-l  --list{'_}
-    lists all the template names
+    Lists all the template names.
 
   {'y}-D{'w}<variable name>{'gr}[=value]{'_}
-    defines/redefines a variable
+    Defines/redefines a variable.
 
   {'y}-e  --edit {'w}<template name>{'_}
-    loads template source to this directory
-
-  {'y}-ei --edit-in {'w}<template name> <directory>{'_}
-    loads template source to the given direcotry
+    Loads template source to this directory. If the directory is destination
+    directory and it doesn't exist, it will be created.
 
   {'y}-p  --prompt {'w}<yes | no | ask>{'_}
-    sets the default answer when prompting. 'yes' will always answer with 'y',
-    'no' will always answer with 'n', 'ask' is default - always ask
+    Sets the default answer when prompting. 'yes' will always answer with 'y',
+    'no' will always answer with 'n', 'ask' is default - always ask. Can be
+    overriden.
 
   {'y}-py{'_}, {'y}-pn{'_}, {'y}-pa{'_}
-    same as '-p yes', '-p no' and '-p ask' respectively
+    Same as '-p yes', '-p no' and '-p ask' respectively.
 
-In case that multiple options that specify the same setting are used, only
-the last is taken into account. e.g. 'makemake vscm -e vscm' is same as
-'makemake -e vscm', 'makemake vscm -py -pa' is same as 'makemake vscm' and
-'makemake vscm -c vscm' is same as 'makemake -c vscm'
+  {'y}-d  --directory {'w}<path to directory>{'_}
+    Sets the relevant directory path. This is cwd by default.
+
+  {'y}-t  --template {'w}<template name>{'_}
+    Sets the template, this can be used for templates which name starts with
+    '-'.
+
+  {'y}--load {'w}<template name>{'_}
+    Loads the given template.
+
+  {'y}-cf  --create-from {'w}<template name> <template surce directory>{'_}
+    Creates new template from the directory with the name. (Equivalent to
+    '-c -t <template name> -d <template source directory>'.)
+
+  {'y}-lt  --load-to {'w}<template name> <destination directory>{'_}
+    Loads the given template into the destination directory (will be created
+    if it doesn't exist). (Equivalent to
+    '--load <temlate name> -d <destination directory>'.)
+
+  {'y}-ei --edit-in {'w}<template name> <directory>{'_}
+    Loads template source to the given direcotry. (Equivalent to
+    '-e -t <template name> -d <template source directory>'.)
+
+Ehen option can be overriden, it means that it can be specified multiple
+times, and the last occurence takes effect.
 ",
         // BonnyAD9 gradient in 3 strings
         termal::gradient("BonnyAD9", (250, 50, 170), (180, 50, 240)),

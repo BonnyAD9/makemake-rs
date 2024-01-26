@@ -7,12 +7,18 @@ pub enum ArgError {
     #[error("Expected {} after option '{}'", .exp, .opt)]
     MissingAfter { exp: &'static str, opt: String },
     #[error(
-        "Invalid option '{}', If you ment to load template, use the option \
-        '--load' for templates which name starts with '-'", .0
+        "Invalid option '{}', If you ment it as template name, use '-t' for \
+        templates which name starts with '-'", .0
     )]
     InvalidOption(String),
-    #[error("{}", .0)]
-    _OtherMsg(&'static str),
+    #[error("In the arguments the template is set multiple times.")]
+    TooManyTemplates,
+    #[error("In the arguments the working path is set multiple times.")]
+    TooManyPaths,
+    #[error("In the arguments the action is set multiple times.")]
+    TooManyActions,
+    #[error("Missing template name for the given action.")]
+    MissingTemplate,
 }
 
 pub type ArgResult<T> = Result<T, ArgError>;
@@ -24,24 +30,21 @@ pub enum PromptAnswer {
     Ask,
 }
 
-pub enum Action<'a> {
-    None,
+#[derive(Clone, Copy, Debug)]
+pub enum Action {
     Help,
-    Create { name: &'a str, path: &'a str },
-    Load { name: &'a str, path: &'a str },
-    Remove(&'a str),
+    Create,
+    Load,
+    Remove,
     List,
-    Edit { name: &'a str, path: &'a str },
-}
-
-impl<'a> Action<'a> {
-    pub const fn _is_set(&self) -> bool {
-        !matches!(self, Action::None)
-    }
+    Edit,
 }
 
 pub struct Args<'a> {
-    pub action: Action<'a>,
+    pub cnt: usize,
+    pub template: Option<&'a str>,
+    pub directory: Option<&'a str>,
+    pub action: Option<Action>,
     pub vars: HashMap<String, String>,
     pub prompt_answer: PromptAnswer,
 }
@@ -87,7 +90,10 @@ impl<'a> Args<'a> {
         I: Iterator<Item = &'a str>,
     {
         let mut res = Self {
-            action: Action::None,
+            cnt: 0,
+            template: None,
+            directory: None,
+            action: None,
             vars: HashMap::new(),
             prompt_answer: PromptAnswer::Ask,
         };
@@ -95,55 +101,42 @@ impl<'a> Args<'a> {
         let mut args = ArgIterator::new(args);
 
         while let Some(arg) = args.next() {
+            res.cnt += 1;
             match arg {
-                "-h" | "--help" => res.action = Action::Help,
-                "-c" | "--create" => {
-                    res.action = Action::Create {
-                        name: args.expect("new template name")?,
-                        path: ".",
-                    }
+                "-h" | "--help" => res.set_action(Action::Help)?,
+                "-c" | "--create" => res.set_action(Action::Create)?,
+                "-t" | "--template" => {
+                    res.set_template(args.expect("template name")?)?
                 }
-                "-cf" | "--create-from" => {
-                    res.action = Action::Create {
-                        name: args.expect(
-                            "new template name and new source directory",
-                        )?,
-                        path: args.expect("source directory")?,
-                    }
+                "-d" | "--directory" => {
+                    res.set_path(args.expect("path to a directory")?)?
                 }
-                "--load" => {
-                    res.action = Action::Load {
-                        name: args.expect("existing template name")?,
-                        path: ".",
-                    }
-                }
-                "-lt" | "--load-to" => {
-                    res.action = Action::Load {
-                        name: args.expect(
-                            "existing template name and destination directory",
-                        )?,
-                        path: args.expect("destination directory")?,
-                    }
-                }
-                "-l" | "--list" => res.action = Action::List,
-                "-r" | "--remove" => {
-                    res.action =
-                        Action::Remove(args.expect("existing template name")?)
-                }
-                "-e" | "--edit" => {
-                    res.action = Action::Edit {
-                        name: args.expect("existing template name")?,
-                        path: ".",
-                    }
-                }
-                "-ei" | "--edit-in" => {
-                    res.action = Action::Edit {
-                        name: args.expect(
-                            "existing template name and destination directory",
-                        )?,
-                        path: args.expect("destination directory")?,
-                    }
-                }
+                "-cf" | "--create-from" => res.set_action_template_path(
+                    Action::Create,
+                    args.expect("new template name and new source directory")?,
+                    args.expect("source directory")?,
+                )?,
+                "--load" => res.set_action_template(
+                    Action::Load,
+                    args.expect("existing template name")?,
+                )?,
+                "-lt" | "--load-to" => res.set_action_template_path(
+                    Action::Load,
+                    args.expect(
+                        "existing template name and destination directory",
+                    )?,
+                    args.expect("destination directory")?,
+                )?,
+                "-l" | "--list" => res.set_action(Action::List)?,
+                "-r" | "--remove" => res.set_action(Action::Remove)?,
+                "-e" | "--edit" => res.set_action(Action::Edit)?,
+                "-ei" | "--edit-in" => res.set_action_template_path(
+                    Action::Edit,
+                    args.expect(
+                        "existing template name and destination directory",
+                    )?,
+                    args.expect("destination directory")?,
+                )?,
                 "-p" | "--prompt-answer" => {
                     let answ = args.expect("'yes', 'no' or 'ask'")?;
                     res.prompt_answer = match answ.to_lowercase().as_str() {
@@ -172,15 +165,73 @@ impl<'a> Args<'a> {
                 arg if arg.starts_with("-") => {
                     return Err(ArgError::InvalidOption(arg.to_owned()))
                 }
-                _ => {
-                    res.action = Action::Load {
-                        name: arg,
-                        path: ".",
-                    }
-                }
+                _ => res.set_template(arg)?,
             } // match
         } // while
 
         Ok(res)
     } // fn parse
+
+    pub fn get_directory(&self) -> &'a str {
+        self.directory.unwrap_or(".")
+    }
+
+    pub fn get_template(&self) -> ArgResult<&'a str> {
+        self.template.ok_or(ArgError::MissingTemplate)
+    }
+
+    pub fn get_action(&self) -> Action {
+        if self.cnt == 0 {
+            Action::Help
+        } else {
+            self.action.unwrap_or(Action::Load)
+        }
+    }
+
+    fn set_template(&mut self, template: &'a str) -> ArgResult<()> {
+        if self.template.is_some() {
+            Err(ArgError::TooManyTemplates)
+        } else {
+            self.template = Some(template);
+            Ok(())
+        }
+    }
+
+    fn set_path(&mut self, path: &'a str) -> ArgResult<()> {
+        if self.directory.is_some() {
+            Err(ArgError::TooManyPaths)
+        } else {
+            self.directory = Some(path);
+            Ok(())
+        }
+    }
+
+    fn set_action(&mut self, action: Action) -> ArgResult<()> {
+        if self.action.is_some() {
+            Err(ArgError::TooManyActions)
+        } else {
+            self.action = Some(action);
+            Ok(())
+        }
+    }
+
+    fn set_action_template(
+        &mut self,
+        action: Action,
+        template: &'a str,
+    ) -> ArgResult<()> {
+        self.set_action(action)?;
+        self.set_template(template)
+    }
+
+    fn set_action_template_path(
+        &mut self,
+        action: Action,
+        template: &'a str,
+        path: &'a str,
+    ) -> ArgResult<()> {
+        self.set_action(action)?;
+        self.set_template(template)?;
+        self.set_path(path)
+    }
 } // impl Args<'a>
