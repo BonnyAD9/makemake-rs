@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use termal::eprintcln;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -103,7 +104,7 @@ impl<'a> Args<'a> {
         while let Some(arg) = args.next() {
             res.cnt += 1;
             match arg {
-                "-h" | "--help" => res.set_action(Action::Help)?,
+                "-h" | "--help" | "-?" => res.set_action(Action::Help)?,
                 "-c" | "--create" => res.set_action(Action::Create)?,
                 "-t" | "--template" => {
                     res.set_template(args.expect("template name")?)?
@@ -171,6 +172,50 @@ impl<'a> Args<'a> {
 
         Ok(res)
     } // fn parse
+
+    pub fn check_unused(&self) {
+        match self.get_action() {
+            Action::Help => {
+                self.unused_template();
+                self.unused_directory();
+                self.unused_vars();
+            },
+            Action::Create => {
+                self.unused_vars();
+            }
+            Action::Load => {}
+            Action::Remove => {
+                self.unused_directory();
+                self.unused_vars();
+            },
+            Action::List => {
+                self.unused_template();
+                self.unused_directory();
+                self.unused_vars();
+            },
+            Action::Edit => {
+                self.unused_vars();
+            }
+        }
+    }
+
+    fn unused_template(&self) {
+        if let Some(t) = self.template {
+            eprintcln!("{'m}warning:{'_} unused template argument '{t}'");
+        }
+    }
+
+    fn unused_directory(&self) {
+        if let Some(d) = self.directory {
+            eprintcln!("{'m}warning:{'_} unused directory argument '{d}'");
+        }
+    }
+
+    fn unused_vars(&self) {
+        if !self.vars.is_empty() {
+            eprintcln!("{'m}warning:{'_} variables are set but unused.");
+        }
+    }
 
     pub fn get_directory(&self) -> &'a str {
         self.directory.unwrap_or(".")

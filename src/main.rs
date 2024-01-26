@@ -35,6 +35,8 @@ fn start() -> Result<()> {
     let args: Vec<_> = env::args().collect();
     let args = Args::parse(args.iter().skip(1).map(|a| a.as_str()))?;
 
+    args.check_unused();
+
     // Do what the arguments specify
     match args.get_action() {
         Action::Create => create(args)?,

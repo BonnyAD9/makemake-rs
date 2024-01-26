@@ -8,6 +8,8 @@
 - Builtin os variables now expand to the name of the os instead of to `'true'`
 - Check for errors before asking for confirmation
 - Better error messages
+- More ways to use CLI
+- Warn of unused arguments
 
 ## v1.1.1
 - Prepare for AUR release
