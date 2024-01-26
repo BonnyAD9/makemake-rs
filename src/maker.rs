@@ -83,16 +83,15 @@ where
 impl MakeConfig {
     fn load_internal_variables(&mut self) {
         #[cfg(target_os = "linux")]
-        self.vars.insert("_LINUX".to_owned(), "true".to_owned());
+        self.vars.insert("_LINUX".to_owned(), "linux".to_owned());
         #[cfg(target_os = "windows")]
-        self.vars.insert("_WINDOWS".to_owned(), "true".to_owned());
+        self.vars.insert("_WINDOWS".to_owned(), "windows".to_owned());
         #[cfg(target_os = "macos")]
-        self.vars.insert("_MACOS".to_owned(), "true".to_owned());
+        self.vars.insert("_MACOS".to_owned(), "macos".to_owned());
         #[cfg(target_os = "ios")]
-        self.vars.insert("_IOS".to_owned(), "true".to_owned());
+        self.vars.insert("_IOS".to_owned(), "ios".to_owned());
         #[cfg(target_os = "freebsd")]
-        self.vars.insert("_FREEBSD".to_owned(), "true".to_owned());
-        self.vars.insert("_".to_owned(), "".to_owned());
+        self.vars.insert("_FREEBSD".to_owned(), "freebsd".to_owned());
     }
 
     fn make_dir<P>(&self, rsrc: P, rdst: P) -> Result<()>

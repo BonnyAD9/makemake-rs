@@ -166,7 +166,7 @@ impl<'a> Args<'a> {
                     if let Some((name, value)) = arg.split_once("=") {
                         res.vars.insert(name.to_owned(), value.to_owned());
                     } else {
-                        res.vars.insert(arg.to_owned(), " ".to_owned());
+                        res.vars.insert(arg.to_owned(), String::new());
                     }
                 }
                 arg if arg.starts_with("-") => {

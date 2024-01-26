@@ -12,8 +12,6 @@ pub enum Error {
     LexerUnexpected(char),
     #[error("expected {}", .0)]
     LexerExpect(&'static str),
-    //#[error("unexpected token '{}'", .0)]
-    //ParserUnexpected(Token),
     #[error("expected {}", .0)]
     ParserExpected(&'static str),
     #[error("{}", .0)]
