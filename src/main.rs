@@ -3,12 +3,9 @@ use dirs::config_dir;
 use err::Result;
 use maker::{copy_dir, create_template, load_template};
 use std::{
-    env,
-    fs::{read_dir, remove_dir_all},
-    io::{stdin, stdout, Write},
-    path::{Path, PathBuf},
+    env, fs::{read_dir, remove_dir_all}, io::{stdin, stdout, Write}, path::{Path, PathBuf}, process::ExitCode
 };
-use termal::printcln;
+use termal::{eprintcln, printcln};
 
 use crate::err::Error;
 
@@ -20,7 +17,17 @@ mod maker;
 mod parser;
 mod writer;
 
-fn main() -> Result<()> {
+fn main() -> ExitCode {
+    match start() {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintcln!("{'r}error:{'_} {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn start() -> Result<()> {
     let args: Vec<_> = env::args().collect();
     let args = Args::parse(args.iter().skip(1).map(|a| a.as_str()))?;
 
