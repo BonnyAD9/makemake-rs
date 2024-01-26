@@ -8,16 +8,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use path_absolutize::Absolutize;
 use result::OptionResultExt;
 use serde::{Deserialize, Serialize};
 use utf8_chars::BufReadCharsExt;
 
-use crate::{
-    err::{Error, Result},
-    parser::parse,
-    writer::ToFmtWrite,
-};
+use crate::{err::Result, parser::parse, writer::ToFmtWrite};
 
 #[derive(Serialize, Deserialize)]
 struct MakeConfig {
