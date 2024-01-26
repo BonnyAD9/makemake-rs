@@ -12,6 +12,7 @@
 - Warn of unused arguments
 - Choose whether to print with colors
 - Support symlinks
+- Support ignoring, making, copying and renaming directories and symlinks
 
 ## v1.1.1
 - Prepare for AUR release

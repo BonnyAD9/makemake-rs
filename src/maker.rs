@@ -32,6 +32,7 @@ enum MakeInfo {
 #[derive(Clone, Copy, Serialize, Deserialize, Default)]
 enum MakeType {
     #[default]
+    Auto,
     Copy,
     Make,
     Ignore,
@@ -104,74 +105,128 @@ impl MakeConfig {
         while let Some((src, dst)) = dirs.pop() {
             let meta = src.symlink_metadata()?;
             if meta.is_symlink() {
-                let adr = read_link(&src)?;
-                symlink(adr, dst)?;
+                self.make_symlink_name(src, &rsrc, dst.into_owned())?;
             } else if meta.is_file() {
-                // src is always subpath of rsrc
-                // let srel = diff_paths(&src, &rsrc).unwrap();
-                let srel = src.strip_prefix(&rsrc)?;
-
-                if let Some(info) = self.files.get(srel) {
-                    self.make_file_name(
-                        info,
-                        src.into_owned(),
-                        dst.into_owned(),
-                    )?;
-                } else {
-                    fs::copy(src, dst)?;
-                }
+                self.make_file_name(src, &rsrc, dst.into_owned())?;
             } else if meta.is_dir() {
-                create_dir_all(&dst)?;
-
-                for f in read_dir(src)? {
-                    let f = f?;
-                    let path = f.path();
-                    let name = f.file_name();
-                    dirs.push((path.into(), dst.join(name).into()))
-                }
+                self.make_dir_name(&mut dirs, src, &rsrc, dst.into_owned())?;
             }
         }
 
         Ok(())
     }
 
-    fn make_file_name(
+    fn make_symlink_name<P1, P2>(
         &self,
-        info: &MakeInfo,
-        src: PathBuf,
+        src: P1,
+        rsrc: P2,
         mut dst: PathBuf,
-    ) -> Result<()> {
-        let action = match info {
-            MakeInfo::TypeOnly(a) => *a,
-            MakeInfo::Info(i) => {
-                if i.name.len() != 0 {
-                    let mut name = String::new();
-                    self.expand(
-                        &mut i.name.chars().map(|a| Ok(a)),
-                        &mut name,
-                    )?;
-                    if name.len() == 0 {
-                        MakeType::Ignore
-                    } else {
-                        dst.set_file_name(name);
-                        i.action
-                    }
-                } else {
-                    i.action
+    ) -> Result<()>
+    where
+        P1: AsRef<Path>,
+        P2: AsRef<Path>,
+    {
+        let src = src.as_ref();
+        let rsrc = rsrc.as_ref();
+
+        // src is always subpath of rsrc
+        // let srel = diff_paths(&src, &rsrc).unwrap();
+        let srel = src.strip_prefix(rsrc)?;
+
+        if let Some(info) = self.files.get(srel) {
+            let action = match info {
+                MakeInfo::TypeOnly(a) => *a,
+                MakeInfo::Info(i) => self.make_name(i, &mut dst)?,
+            };
+
+            match action {
+                MakeType::Ignore => {}
+                _ => {
+                    let adr = read_link(&src)?;
+                    symlink(adr, dst)?;
                 }
             }
-        };
+        } else {
+            let adr = read_link(&src)?;
+            symlink(adr, dst)?;
+        }
 
-        match action {
-            MakeType::Copy => _ = fs::copy(src, dst)?,
-            MakeType::Make => {
-                let mut src = BufReader::new(File::open(src)?);
-                self.expand(
-                    &mut src.chars().map(|c| Ok(c?)),
-                    &mut ToFmtWrite(BufWriter::new(File::create(dst)?)),
-                )?;
+        Ok(())
+    }
+
+    fn make_file_name<P1, P2>(
+        &self,
+        src: P1,
+        rsrc: P2,
+        mut dst: PathBuf,
+    ) -> Result<()>
+    where
+        P1: AsRef<Path>,
+        P2: AsRef<Path>,
+    {
+        let src = src.as_ref();
+        let rsrc = rsrc.as_ref();
+
+        // src is always subpath of rsrc
+        // let srel = diff_paths(&src, &rsrc).unwrap();
+        let srel = src.strip_prefix(&rsrc)?;
+
+        if let Some(info) = self.files.get(srel) {
+            let action = match info {
+                MakeInfo::TypeOnly(a) => *a,
+                MakeInfo::Info(i) => self.make_name(i, &mut dst)?,
+            };
+
+            match action {
+                MakeType::Copy | MakeType::Auto => _ = fs::copy(src, dst)?,
+                MakeType::Make => {
+                    let mut src = BufReader::new(File::open(src)?);
+                    self.expand(
+                        &mut src.chars().map(|c| Ok(c?)),
+                        &mut ToFmtWrite(BufWriter::new(File::create(dst)?)),
+                    )?;
+                }
+                MakeType::Ignore => {}
             }
-            MakeType::Ignore => {}
+        } else {
+            fs::copy(src, dst)?;
+        }
+
+        Ok(())
+    }
+
+    fn make_dir_name<P1, P2>(
+        &self,
+        dirs: &mut Vec<(Cow<Path>, Cow<Path>)>,
+        src: P1,
+        rsrc: P2,
+        mut dst: PathBuf,
+    ) -> Result<()>
+    where
+        P1: AsRef<Path>,
+        P2: AsRef<Path>,
+    {
+        let src = src.as_ref();
+        let rsrc = rsrc.as_ref();
+
+        // src is always subpath of rsrc
+        // let srel = diff_paths(&src, &rsrc).unwrap();
+        let srel = src.strip_prefix(&rsrc)?;
+
+        if let Some(info) = self.files.get(srel) {
+            let action = match info {
+                MakeInfo::TypeOnly(a) => *a,
+                MakeInfo::Info(i) => self.make_name(i, &mut dst)?,
+            };
+            match action {
+                MakeType::Copy => copy_dir(src, dst)?,
+                MakeType::Auto | MakeType::Make => {
+                    query_dir_copy(src, dst, dirs)?
+                }
+                MakeType::Ignore => {}
+            }
+        } else {
+            query_dir_copy(src, dst, dirs)?;
         }
 
         Ok(())
@@ -201,6 +256,25 @@ impl MakeConfig {
 
         Ok(())
     }
+
+    fn make_name(
+        &self,
+        info: &FileInfo,
+        path: &mut PathBuf,
+    ) -> Result<MakeType> {
+        if info.name.len() != 0 {
+            let mut name = String::new();
+            self.expand(&mut info.name.chars().map(|a| Ok(a)), &mut name)?;
+            if name.len() == 0 {
+                Ok(MakeType::Ignore)
+            } else {
+                path.set_file_name(name);
+                Ok(info.action)
+            }
+        } else {
+            Ok(info.action)
+        }
+    }
 }
 
 pub fn copy_dir<P1, P2>(rsrc: P1, rdst: P2) -> Result<()>
@@ -219,15 +293,31 @@ where
         } else if meta.is_file() {
             fs::copy(src, dst)?;
         } else if meta.is_dir() {
-            create_dir_all(&dst)?;
-
-            for f in read_dir(src)? {
-                let f = f?;
-                let path = f.path();
-                let name = f.file_name();
-                dirs.push((path.into(), dst.join(name).into()));
-            }
+            query_dir_copy(src, dst, &mut dirs)?;
         }
+    }
+
+    Ok(())
+}
+
+fn query_dir_copy<P1, P2>(
+    src: P1,
+    dst: P2,
+    queue: &mut Vec<(Cow<Path>, Cow<Path>)>,
+) -> Result<()>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
+    let dst = dst.as_ref();
+
+    create_dir_all(dst)?;
+
+    for f in read_dir(src)? {
+        let f = f?;
+        let path = f.path();
+        let name = f.file_name();
+        queue.push((path.into(), dst.join(name).into()));
     }
 
     Ok(())
