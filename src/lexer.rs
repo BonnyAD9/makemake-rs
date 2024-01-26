@@ -24,15 +24,15 @@ impl Display for Token {
     }
 }
 
-pub struct Lexer<I>
+pub struct Lexer<'a, I>
 where
     I: Iterator<Item = Result<char>>,
 {
     cur: Option<char>,
-    data: I,
+    data: &'a mut I,
 }
 
-impl<I> Iterator for Lexer<I>
+impl<'a, I> Iterator for Lexer<'a, I>
 where
     I: Iterator<Item = Result<char>>,
 {
@@ -43,7 +43,16 @@ where
     }
 }
 
-impl<I> Lexer<I>
+impl<'a, I> From<&'a mut I> for Lexer<'a, I> where I: Iterator<Item = Result<char>> {
+    fn from(value: &'a mut I) -> Self {
+        Self {
+            cur: None,
+            data: value,
+        }
+    }
+}
+
+impl<'a, I> Lexer<'a, I>
 where
     I: Iterator<Item = Result<char>>,
 {
@@ -60,9 +69,18 @@ where
         }
 
         match self.cur {
-            Some('}') => Ok(Some(Token::CloseBracket)),
-            Some('?') => Ok(Some(Token::Question)),
-            Some(':') => Ok(Some(Token::Colon)),
+            Some('}') => {
+                self.cur = None;
+                Ok(Some(Token::CloseBracket))
+            },
+            Some('?') => {
+                self.cur = None;
+                Ok(Some(Token::Question))
+            },
+            Some(':') => {
+                self.cur = None;
+                Ok(Some(Token::Colon))
+            },
             Some('\'') => self.read_literal(),
             Some(a) if a.is_alphabetic() || a == '_' => self.read_ident(),
             None => Ok(None),
@@ -96,6 +114,7 @@ where
             match c {
                 '\'' => {
                     success = true;
+                    self.next_chr()?;
                     break;
                 }
                 '\\' => lit.push(self.escape()?),

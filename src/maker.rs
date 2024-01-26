@@ -1,483 +1,230 @@
-use crate::char_rw::CharRW;
-use eyre::{Report, Result};
-use pathdiff::diff_paths;
-use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     collections::HashMap,
-    fs::{copy, create_dir_all, read_dir, File},
-    io::{Read, Write},
-    path::PathBuf,
+    fmt::Write,
+    fs::{self, create_dir_all, read_dir, File},
+    io::{BufReader, BufWriter},
+    path::{Path, PathBuf},
 };
-use utf8_read::Char::{Char, Eof, NoData};
 
-/// Type of action on file
-#[derive(Clone, Copy, Serialize, Deserialize)]
+use pathdiff::diff_paths;
+use result::OptionResultExt;
+use serde::{Deserialize, Serialize};
+use utf8_chars::BufReadCharsExt;
+
+use crate::{
+    err::{Error, Result}, parser::parse, writer::ToFmtWrite
+};
+
+#[derive(Serialize, Deserialize)]
+struct MakeConfig {
+    #[serde(default)]
+    files: HashMap<PathBuf, MakeInfo>,
+    #[serde(default)]
+    vars: HashMap<String, String>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+enum MakeInfo {
+    TypeOnly(MakeType),
+    Info(FileInfo),
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize, Default)]
 enum MakeType {
+    #[default]
     Copy,
     Make,
     Ignore,
 }
 
-/// Type of data stored about a file in a config file
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-enum MakeInfoEnum {
-    TypeOnly(MakeType),
-    Info(FileInfo),
-}
-
-/// Info about a file in a config file.
 #[derive(Clone, Serialize, Deserialize)]
 struct FileInfo {
-    #[serde(default = "default_file_info_action")]
+    #[serde(default)]
     action: MakeType,
     #[serde(default)]
     name: String,
 }
 
-/// Gets the default value for `FileInfo.action`. Used by serde.
-fn default_file_info_action() -> MakeType {
-    MakeType::Copy
-}
-
-/// Configuration from config file
-#[derive(Serialize, Deserialize)]
-struct MakeConfig {
-    #[serde(default)]
-    files: HashMap<PathBuf, MakeInfoEnum>,
-    #[serde(default)]
-    vars: HashMap<String, String>,
-}
-
-/// Copies the template source from `src` to `out`
-pub fn create_template(src: &str, out: &str) -> Result<()> {
+pub fn create_template<P>(src: P, out: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
     copy_dir(src, out)
 }
 
-/// Loads the template from its source at `src` into `dest` and expands all
-/// expressions using the template configuration and `vars`.
-/// `vars` have priority over the variables in template config file
-pub fn load_template(
-    src: &str,
-    dest: &str,
+pub fn load_template<P1, P2>(
+    src: P1,
+    dst: P2,
     vars: HashMap<String, String>,
-) -> Result<()> {
-    if let Ok(f) = File::open(src.to_owned() + "/makemake.json") {
-        // Load the template according to its config file
-        let mut conf: MakeConfig = serde_json::from_reader(f)?;
-        load_internal_variables(&mut conf.vars);
+) -> Result<()>
+where
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
+{
+    let src = src.as_ref();
+    let dst = dst.as_ref();
+    let conf = src.join("makemake.json");
+
+    if conf.try_exists()? {
+        let conf = File::open(conf)?;
+        let mut conf: MakeConfig = serde_json::from_reader(conf)?;
+        conf.load_internal_variables();
         conf.vars.extend(vars);
-        make_dir(src, dest, src, &conf)
+        conf.make_dir(src, dst)?;
+        Ok(())
     } else {
-        // if there is no config file, just copy the template
-        copy_dir(src, dest)
+        copy_dir(src, dst)
     }
 }
 
-/// Adds internal variables to `vars`
-///
-/// #### Used by:
-/// `load_template`
-fn load_internal_variables(vars: &mut HashMap<String, String>) {
-    #[cfg(target_os = "linux")]
-    vars.insert("_LINUX".to_owned(), "true".to_owned());
-    #[cfg(target_os = "windows")]
-    vars.insert("_WINDOWS".to_owned(), "true".to_owned());
-    #[cfg(target_os = "macos")]
-    vars.insert("_MACOS".to_owned(), "true".to_owned());
-    #[cfg(target_os = "ios")]
-    vars.insert("_IOS".to_owned(), "true".to_owned());
-    #[cfg(target_os = "freebsd")]
-    vars.insert("_FREEBSD".to_owned(), "true".to_owned());
-    vars.insert("_".to_owned(), "".to_owned());
-}
-
-/// Loads template from `src` into `dest` with the configuration in `config`.
-/// `base` is used for recursive calling. When calling normally it should be
-/// the same as `src`.
-///
-/// #### Used by:
-/// `load_template`, `make_dir`
-fn make_dir(
-    src: &str,
-    dest: &str,
-    base: &str,
-    conf: &MakeConfig,
-) -> Result<()> {
-    create_dir_all(dest)?;
-
-    for f in read_dir(src)? {
-        let f = f?;
-
-        // Path to the source file/directory
-        let fpath = f.path();
-        let fpath = fpath.to_str().ok_or(Report::msg("invalid path"))?;
-
-        // Name of the file/directory to create in destination
-        let dname = f.file_name();
-        let dname = dname.to_str().ok_or(Report::msg("invalid file name"))?;
-        // Path to the file/directory in the destination
-        let opath = dest.to_owned() + "/" + dname;
-
-        // If the source is directory, recursively call itself
-        if f.file_type()?.is_dir() {
-            make_dir(fpath, &opath, base, conf)?;
-            continue;
-        }
-
-        // Path relative to the template
-        let frel =
-            diff_paths(fpath, base).ok_or(Report::msg("Invalid base path"))?;
-
-        if let Some(c) = conf.files.get(&frel) {
-            // expand the file and its name if it is in config
-            make_file_name(c, &conf.vars, fpath, dest, dname)?;
-        } else {
-            // copy the file if it isn't mentioned in the config
-            copy(fpath, opath)?;
-        }
+impl MakeConfig {
+    fn load_internal_variables(&mut self) {
+        #[cfg(target_os = "linux")]
+        self.vars.insert("_LINUX".to_owned(), "true".to_owned());
+        #[cfg(target_os = "windows")]
+        self.vars.insert("_WINDOWS".to_owned(), "true".to_owned());
+        #[cfg(target_os = "macos")]
+        self.vars.insert("_MACOS".to_owned(), "true".to_owned());
+        #[cfg(target_os = "ios")]
+        self.vars.insert("_IOS".to_owned(), "true".to_owned());
+        #[cfg(target_os = "freebsd")]
+        self.vars.insert("_FREEBSD".to_owned(), "true".to_owned());
+        self.vars.insert("_".to_owned(), "".to_owned());
     }
 
-    Ok(())
-}
+    fn make_dir<P>(&self, rsrc: P, rdst: P) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let mut dirs: Vec<(Cow<_>, Cow<_>)> =
+            vec![(rsrc.as_ref().into(), rdst.as_ref().into())];
 
-/// Expands expression for the filename `dname` in the source directory `src`
-/// to the destination directory `dpath`. `info` specifies what to do with the
-/// file contents. For expansions uses the variables in `vars`
-///
-/// #### Used by:
-/// `make_dir`
-fn make_file_name(
-    info: &MakeInfoEnum,
-    vars: &HashMap<String, String>,
-    src: &str,
-    dpath: &str,
-    dname: &str,
-) -> Result<()> {
-    // buffer for custom name
-    let mut buf = String::new();
-    // Determine the action and file name
-    let (action, name) = match info {
-        MakeInfoEnum::TypeOnly(a) => (*a, dname),
-        MakeInfoEnum::Info(i) => {
-            if i.name.len() == 0 {
-                (i.action, dname)
-            } else {
-                // Get the name if the template specifies other than the
-                // default
-                make_name(
-                    &mut CharRW::new(i.name.as_bytes(), [].as_mut()),
-                    vars,
-                    &mut buf,
-                )?;
-                // skip files with no name
-                if buf.len() == 0 {
-                    return Ok(());
+        while let Some((src, dst)) = dirs.pop() {
+            let meta = src.metadata()?;
+            if meta.is_file() {
+                // src is always subpath of rsrc
+                let srel = diff_paths(&src, &rsrc).unwrap();
+
+                if let Some(info) = self.files.get(&srel) {
+                    self.make_file_name(
+                        info,
+                        src.into_owned(),
+                        dst.into_owned(),
+                    )?;
+                } else {
+                    fs::copy(src, dst)?;
                 }
-                (i.action, buf.as_str())
-            }
-        }
-    };
+            } else if meta.is_dir() {
+                create_dir_all(&dst)?;
 
-    // create the file path
-    let dest = dpath.to_owned() + "/" + name;
-
-    // do the action with the file
-    match action {
-        MakeType::Copy => _ = copy(src, dest)?,
-        MakeType::Make => {
-            let mut rw = CharRW::new(File::open(src)?, File::create(dest)?);
-            make_file(&mut rw, vars)?;
-        }
-        MakeType::Ignore => {}
-    }
-    Ok(())
-}
-
-/// Evaluates expressions in filename in the read of `rw` and appends the
-/// name to `out`. Uses variables in `vars`.
-///
-/// The difference between `make_name` and `make_file` is that `make_name`
-/// outputs to a string and `make_file` outputs to the write of `rw`.
-///
-/// #### Used by:
-/// `make_file_name`
-fn make_name<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-    out: &mut String,
-) -> Result<()> {
-    while let Char(c) = rw.read()? {
-        if c == '$' {
-            if let Char(c) = rw.read()? {
-                if c != '{' {
-                    out.push('$');
-                    out.push(c);
-                    continue;
+                for f in read_dir(src)? {
+                    let f = f?;
+                    let path = f.path();
+                    let name = f.file_name();
+                    dirs.push((path.into(), dst.join(name).into()))
                 }
-                rw.read()?;
-                make_expr_buf(rw, vars, out)?;
-                continue;
-            }
-        }
-        out.push(c);
-    }
-    Ok(())
-}
-
-/// Evaluates expressions in read of `rw` and outputs them to the write of
-/// `rw`. Uses the variables in `vars`.
-///
-/// The difference between `make_name` and `make_file` is that `make_name`
-/// outputs to a string and `make_file` outputs to the write of `rw`.
-///
-/// #### Used by:
-/// `make_file_name`
-fn make_file<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-) -> Result<()> {
-    while let Char(c) = rw.read()? {
-        if c == '$' {
-            if let Char(c) = rw.read()? {
-                if c != '{' {
-                    rw.write('$')?;
-                    rw.write(c)?;
-                    continue;
-                }
-                rw.read()?;
-                make_expr(rw, &vars)?;
-                continue;
-            }
-        }
-        rw.write(c)?;
-    }
-
-    Ok(())
-}
-
-/// Evaluates single expression (without the '${') from read of `rw` and
-/// outputs it to the write of `rw`. Uses variables in `vars`.
-///
-/// It wraps the `make_expr_buf` function.
-///
-/// #### Used by:
-/// `make_file`
-fn make_expr<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-) -> Result<()> {
-    let mut buf = String::new();
-    make_expr_buf(rw, vars, &mut buf)?;
-    rw.write_str(&buf)
-}
-
-/// Evaluates single expression (without the '${') from read of `rw` and
-/// appends it to `out`.
-///
-/// #### Used by:
-/// `make_name`, `make_expr`
-fn make_expr_buf<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-    out: &mut String,
-) -> Result<()> {
-    let mut buf = String::new();
-    if read_exprs(rw, vars, &mut buf)? {
-        return Err(Report::msg(format!("Invalid token '{}'", rw.cur)));
-    }
-    out.push_str(&buf);
-    Ok(())
-}
-
-/// Reads expression blocks from read of `rw` and appends them to `out`.
-/// Uses variables in `vars`.
-///
-/// #### Used by:
-/// `make_expr_buf`, `read_condition`
-fn read_exprs<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-    out: &mut String,
-) -> Result<bool> {
-    while !matches!(rw.cur, Char('}') | Char(':') | Eof | NoData) {
-        read_expr(rw, vars, out)?;
-    }
-
-    Ok(matches!(rw.cur, Char(':')))
-}
-
-/// Evaluates single expression block in a expression in read of `rw` and
-/// appends it to `out`. Uses the variables in `vars`.
-///
-/// #### Used by:
-/// `read_exprs`
-fn read_expr<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-    out: &mut String,
-) -> Result<()> {
-    match rw.cur {
-        Char('\'') => read_str_literal(rw, out)?,
-        Char('?') => read_condition(rw, vars, out)?,
-        Eof | NoData => return Err(Report::msg("Expected expression")),
-        Char(c) => {
-            if c.is_whitespace() {
-                skip_whitespace(rw)?;
-            } else {
-                read_variable(rw, vars, out)?;
-            }
-        }
-    };
-    Ok(())
-}
-
-/// Skips all whitespace characters in read of `rw`.
-///
-/// #### Used by:
-/// `read_expr`
-fn skip_whitespace<R: Read, W: Write>(rw: &mut CharRW<R, W>) -> Result<()> {
-    rw.read()?;
-    while let Char(c) = rw.cur {
-        if !c.is_whitespace() {
-            break;
-        }
-        rw.read()?;
-    }
-    Ok(())
-}
-
-/// Reads string literal from read of `rw` and appends it to `out`.
-///
-/// #### Used by:
-/// `read_expr`
-fn read_str_literal<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    out: &mut String,
-) -> Result<()> {
-    rw.read()?;
-    loop {
-        match rw.cur {
-            Char('\\') => read_escape(rw, out)?,
-            Char('\'') => {
-                rw.read()?;
-                return Ok(());
-            }
-            Char(c) => out.push(c),
-            _ => return Err(Report::msg("literal not ended")),
-        }
-        rw.read()?;
-    }
-}
-
-/// Reads the escape sequence from read of `rw` and appends it to `out`.
-///
-/// #### Used by:
-/// `read_str_literal`
-fn read_escape<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    out: &mut String,
-) -> Result<()> {
-    rw.read()?;
-    match rw.cur {
-        Char('n') => out.push('\n'),
-        Char('r') => out.push('\r'),
-        Char('t') => out.push('\t'),
-        Char('x') => {
-            return Err(Report::msg("the '\\x' escape sequence is reserved"))
-        }
-        Char('u') => {
-            return Err(Report::msg("the '\\u' escape sequence is reserved"))
-        }
-        Char(c) => {
-            if c.is_digit(10) {
-                return Err(Report::msg(
-                    "the '\\<num>' escape sequence is reserved",
+            } else if meta.is_symlink() {
+                return Err(Error::Unsupported(
+                    "symlinks in templates are not supported",
                 ));
             }
-            out.push(c);
         }
-        _ => return Err(Report::msg("Expected escape sequence")),
-    };
-    Ok(())
-}
 
-/// Reads variable name from read of `rw` and append its value to `out`.
-/// Uses variables in `vars`.
-///
-/// #### Used by:
-/// `read_expr`
-fn read_variable<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-    out: &mut String,
-) -> Result<()> {
-    let mut name = String::new();
-    rw.read_while(&mut name, |c| {
-        !c.is_whitespace() && !matches!(c, '?' | ':' | '\'' | '{' | '}' | '$')
-    })?;
-    if let Some(val) = vars.get(&name) {
-        out.push_str(val);
+        Ok(())
     }
-    Ok(())
-}
 
-/// If `out` is empty skips expression blocks until the token ':' and reads the
-/// following blocks into `out`. Otherwise reads the following blocks and skips
-/// the next.
-///
-/// #### Used by:
-/// `read_expr`
-fn read_condition<R: Read, W: Write>(
-    rw: &mut CharRW<R, W>,
-    vars: &HashMap<String, String>,
-    out: &mut String,
-) -> Result<()> {
-    rw.read()?;
-    if out.len() == 0 {
-        read_exprs(rw, vars, out)?;
-        if !matches!(rw.cur, Char(':')) {
-            return Err(Report::msg("Expected ':'"));
+    fn make_file_name(
+        &self,
+        info: &MakeInfo,
+        src: PathBuf,
+        mut dst: PathBuf,
+    ) -> Result<()> {
+        let action = match info {
+            MakeInfo::TypeOnly(a) => *a,
+            MakeInfo::Info(i) => {
+                if i.name.len() != 0 {
+                    let mut name = String::new();
+                    self.expand(&mut i.name.chars().map(|a| Ok(a)), &mut name)?;
+                    if name.len() == 0 {
+                        MakeType::Ignore
+                    } else {
+                        dst.set_file_name(name);
+                        i.action
+                    }
+                } else {
+                    i.action
+                }
+            }
+        };
+
+        match action {
+            MakeType::Copy => _ = fs::copy(src, dst)?,
+            MakeType::Make => {
+                let mut src = BufReader::new(File::open(src)?);
+                self.expand(
+                    &mut src.chars().map(|c| Ok(c?)),
+                    &mut ToFmtWrite(BufWriter::new(File::create(dst)?)),
+                )?;
+            }
+            MakeType::Ignore => {}
         }
-        rw.read()?;
-        out.clear();
-        read_exprs(rw, vars, out)?;
-    } else {
-        out.clear();
-        read_exprs(rw, vars, out)?;
-        if !matches!(rw.cur, Char(':')) {
-            return Err(Report::msg("Expected ':'"));
-        }
-        rw.read()?;
-        let mut buf = String::new();
-        // skip the second part
-        read_exprs(rw, vars, &mut buf)?;
+
+        Ok(())
     }
-    Ok(())
-}
 
-/// Recursively copies the directory `from` to the directory `to`.
-pub fn copy_dir(from: &str, to: &str) -> Result<()> {
-    create_dir_all(to)?;
+    fn expand<I, W>(&self, src: &mut I, dst: &mut W) -> Result<()>
+    where
+        I: Iterator<Item = Result<char>>,
+        W: Write,
+    {
+        while let Some(c) = src.next().invert()? {
+            if c != '$' {
+                dst.write_char(c)?;
+                continue;
+            }
 
-    for f in read_dir(from)? {
-        let f = f?;
+            if let Some(c) = src.next().invert()? {
+                if c != '{' {
+                    dst.write_char('$')?;
+                    dst.write_char(c)?;
+                    continue;
+                }
 
-        let fpath = f.path();
-        let fpath = fpath.to_str().ok_or(Report::msg("invalid path"))?;
-
-        let opath = to.to_owned()
-            + "/"
-            + f.file_name()
-                .to_str()
-                .ok_or(Report::msg("invalid file name"))?;
-
-        if f.file_type()?.is_dir() {
-            copy_dir(fpath, &opath)?;
-            continue;
+                parse(src)?.eval(dst, &self.vars)?;
+            }
         }
 
-        copy(fpath, opath)?;
+        Ok(())
+    }
+}
+
+pub fn copy_dir<P>(src: P, dst: P) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    let mut dirs: Vec<(Cow<_>, Cow<_>)> =
+        vec![(src.as_ref().into(), dst.as_ref().into())];
+
+    while let Some((src, dst)) = dirs.pop() {
+        let meta = src.metadata()?;
+        if meta.is_file() {
+            fs::copy(src, dst)?;
+        } else if meta.is_dir() {
+            create_dir_all(&dst)?;
+
+            for f in read_dir(src)? {
+                let f = f?;
+                let path = f.path();
+                let name = f.file_name();
+                dirs.push((path.into(), dst.join(name).into()));
+            }
+        } else if meta.is_symlink() {
+            return Err(Error::Unsupported(
+                "symlinks in templates are not supported",
+            ));
+        }
     }
 
     Ok(())

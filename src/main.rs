@@ -1,6 +1,6 @@
 use args::{Action, Args, PromptAnswer};
 use dirs::config_dir;
-use eyre::{Report, Result};
+use err::Result;
 use maker::{copy_dir, create_template, load_template};
 use std::{
     env,
@@ -10,15 +10,15 @@ use std::{
 };
 use termal::printcln;
 
+use crate::err::Error;
+
 mod args;
 mod ast;
-mod char_rw;
 mod err;
 mod lexer;
 mod maker;
-mod writer;
 mod parser;
-mod maker2;
+mod writer;
 
 fn main() -> Result<()> {
     let args: Vec<_> = env::args().collect();
@@ -110,7 +110,7 @@ fn list() -> Result<()> {
     for f in read_dir(get_template_dir("")?)? {
         println!(
             "{}",
-            f?.file_name().to_str().ok_or(Report::msg("invalid name"))?
+            f?.file_name().to_string_lossy()
         );
     }
     Ok(())
@@ -135,18 +135,18 @@ fn prompt_yn(prompt: &str, answ: PromptAnswer) -> Result<Option<()>> {
     return match conf {
         "y" | "Y" => Ok(Some(())),
         "n" | "N" | "" => Ok(None),
-        _ => Err(Report::msg(format!("Invalid option {conf}"))),
+        _ => Err(Error::Msg(format!("Invalid option {conf}").into())),
     };
 }
 
 /// Gets the directory in which the template with the name `name` is stored.
 fn get_template_dir(name: &str) -> Result<String> {
     let config =
-        config_dir().ok_or(Report::msg("Can't get config directory"))?;
+        config_dir().ok_or(Error::Msg("Can't get config directory".into()))?;
 
     Ok(config
         .to_str()
-        .ok_or(Report::msg("Invalid path to config"))?
+        .ok_or(Error::Msg("Invalid path to config".into()))?
         .to_owned()
         + "/makemake/templates/"
         + name)

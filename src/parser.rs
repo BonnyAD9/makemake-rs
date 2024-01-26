@@ -1,18 +1,31 @@
 use result::OptionResultExt;
 
-use crate::{ast::{Condition, Expr, Literal, Variable}, err::{Error, Result}, lexer::Token};
+use crate::{
+    ast::{Condition, Expr, Literal, Variable},
+    err::{Error, Result},
+    lexer::{Lexer, Token},
+};
 
-struct Parser<I> where I: Iterator<Item = Result<Token>> {
+pub struct Parser<I>
+where
+    I: Iterator<Item = Result<Token>>,
+{
     lexer: I,
-    cur: Option<Token>
+    cur: Option<Token>,
 }
 
-impl<I> Parser<I> where I: Iterator<Item = Result<Token>> {
+pub fn parse<I>(data: &mut I) -> Result<Expr> where I: Iterator<Item = Result<char>> {
+    let lexer: Lexer<I> = data.into();
+    let mut parser = Parser::new(lexer);
+    parser.parse()
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Result<Token>>,
+{
     pub fn new(lexer: I) -> Self {
-        Self {
-            lexer,
-            cur: None
-        }
+        Self { lexer, cur: None }
     }
 
     pub fn parse(&mut self) -> Result<Expr> {
@@ -24,7 +37,6 @@ impl<I> Parser<I> where I: Iterator<Item = Result<Token>> {
         } else {
             Ok(res)
         }
-
     }
 
     fn expr(&mut self) -> Result<Expr> {
@@ -42,6 +54,7 @@ impl<I> Parser<I> where I: Iterator<Item = Result<Token>> {
                     break;
                 }
             }
+            self.next_tok()?;
         }
 
         Ok(res)

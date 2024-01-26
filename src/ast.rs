@@ -21,7 +21,14 @@ pub struct Condition {
 }
 
 impl Expr {
-    pub fn eval<W>(self, res: &mut W, vars: &HashMap<String, String>) -> Result<bool> where W: Write {
+    pub fn eval<W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<String, String>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
         match self {
             Self::None => Ok(false),
             Self::Variable(v) => v.eval(res, vars).map(|a| a.into()),
@@ -38,7 +45,7 @@ impl Expr {
             _ => {
                 let tmp = mem::replace(self, Self::None);
                 *self = Expr::Concat(Concat::new(vec![tmp, other]));
-            },
+            }
         }
     }
 }
@@ -72,9 +79,16 @@ impl Variable {
         Self(name)
     }
 
-    pub fn eval<W>(self, res: &mut W, vars: &HashMap<String, String>) -> Result<bool> where W: Write {
+    pub fn eval<W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<String, String>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
         if let Some(v) = vars.get(&self.0) {
-            res.write_str(&self.0)?;
+            res.write_str(v)?;
             Ok(true)
         } else {
             Ok(false)
@@ -87,7 +101,10 @@ impl Literal {
         Self(value)
     }
 
-    pub fn eval<W>(self, res: &mut W) -> Result<bool> where W: Write {
+    pub fn eval<W>(self, res: &mut W) -> Result<bool>
+    where
+        W: Write,
+    {
         res.write_str(&self.0)?;
         Ok(true)
     }
@@ -98,8 +115,18 @@ impl Concat {
         Self(exprs)
     }
 
-    pub fn eval<W>(self, res: &mut W, vars: &HashMap<String, String>) -> Result<bool> where W: Write {
-        self.0.into_iter().map(|e| e.eval(res, vars)).try_fold(true, |a, b| Ok(a | b?))
+    pub fn eval<W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<String, String>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
+        self.0
+            .into_iter()
+            .map(|e| e.eval(res, vars))
+            .try_fold(true, |a, b| Ok(a | b?))
     }
 }
 
@@ -112,7 +139,14 @@ impl Condition {
         }
     }
 
-    pub fn eval<W>(self, res: &mut W, vars: &HashMap<String, String>) -> Result<bool> where W: Write {
+    pub fn eval<W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<String, String>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
         let mut w = FakeWriter;
         if self.cond.eval(&mut w, vars)? {
             self.success.eval(res, vars)
