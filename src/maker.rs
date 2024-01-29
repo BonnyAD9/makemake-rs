@@ -16,6 +16,8 @@ use crate::{err::Result, parser::parse, writer::ToFmtWrite};
 
 #[derive(Serialize, Deserialize)]
 struct MakeConfig {
+    #[serde(default, rename = "expandVariables")]
+    expand_variables: bool,
     #[serde(default)]
     files: HashMap<PathBuf, MakeInfo>,
     #[serde(default)]
@@ -70,8 +72,7 @@ where
     if conf.try_exists()? {
         let conf = File::open(conf)?;
         let mut conf: MakeConfig = serde_json::from_reader(conf)?;
-        conf.load_internal_variables();
-        conf.vars.extend(vars);
+        conf.init(vars)?;
         conf.make_dir(src, dst)?;
         Ok(())
     } else {
@@ -80,19 +81,38 @@ where
 }
 
 impl MakeConfig {
-    fn load_internal_variables(&mut self) {
+    fn load_internal_variables(vars: &mut HashMap<String, String>) {
         #[cfg(target_os = "linux")]
-        self.vars.insert("_LINUX".to_owned(), "linux".to_owned());
+        vars.insert("_LINUX".to_owned(), "linux".to_owned());
         #[cfg(target_os = "windows")]
-        self.vars
-            .insert("_WINDOWS".to_owned(), "windows".to_owned());
+        vars.insert("_WINDOWS".to_owned(), "windows".to_owned());
         #[cfg(target_os = "macos")]
-        self.vars.insert("_MACOS".to_owned(), "macos".to_owned());
+        vars.insert("_MACOS".to_owned(), "macos".to_owned());
         #[cfg(target_os = "ios")]
-        self.vars.insert("_IOS".to_owned(), "ios".to_owned());
+        vars.insert("_IOS".to_owned(), "ios".to_owned());
         #[cfg(target_os = "freebsd")]
-        self.vars
-            .insert("_FREEBSD".to_owned(), "freebsd".to_owned());
+        vars.insert("_FREEBSD".to_owned(), "freebsd".to_owned());
+    }
+
+    fn init(&mut self, mut vars: HashMap<String, String>) -> Result<()> {
+        Self::load_internal_variables(&mut vars);
+
+        if self.expand_variables {
+            self.expand_variables(&vars)?;
+        }
+        self.vars.extend(vars);
+
+        Ok(())
+    }
+
+    fn expand_variables(&mut self, vars: &HashMap<String, String>) -> Result<()> {
+        for v in self.vars.values_mut() {
+            let mut res = String::new();
+            expand(vars, &mut v.chars().map(|c| Ok(c)), &mut res)?;
+            *v = res;
+        }
+
+        Ok(())
     }
 
     fn make_dir<P>(&self, rsrc: P, rdst: P) -> Result<()>
@@ -237,24 +257,7 @@ impl MakeConfig {
         I: Iterator<Item = Result<char>>,
         W: Write,
     {
-        while let Some(c) = src.next().invert()? {
-            if c != '$' {
-                dst.write_char(c)?;
-                continue;
-            }
-
-            if let Some(c) = src.next().invert()? {
-                if c != '{' {
-                    dst.write_char('$')?;
-                    dst.write_char(c)?;
-                    continue;
-                }
-
-                parse(src)?.eval(dst, &self.vars)?;
-            }
-        }
-
-        Ok(())
+        expand(&self.vars, src, dst)
     }
 
     fn make_name(
@@ -275,6 +278,31 @@ impl MakeConfig {
             Ok(info.action)
         }
     }
+}
+
+fn expand<I, W>(vars: &HashMap<String, String>, src: &mut I, dst: &mut W) -> Result<()>
+where
+    I: Iterator<Item = Result<char>>,
+    W: Write,
+{
+    while let Some(c) = src.next().invert()? {
+        if c != '$' {
+            dst.write_char(c)?;
+            continue;
+        }
+
+        if let Some(c) = src.next().invert()? {
+            if c != '{' {
+                dst.write_char('$')?;
+                dst.write_char(c)?;
+                continue;
+            }
+
+            parse(src)?.eval(dst, vars)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub fn copy_dir<P1, P2>(rsrc: P1, rdst: P2) -> Result<()>

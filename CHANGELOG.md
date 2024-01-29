@@ -13,6 +13,7 @@
 - Choose whether to print with colors
 - Support symlinks
 - Support ignoring, making, copying and renaming directories and symlinks
+- Add option to expand variable values
 
 ## v1.1.1
 - Prepare for AUR release

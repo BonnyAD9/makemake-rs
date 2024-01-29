@@ -1,10 +1,14 @@
 {
-    "$schema": "http://json-schema.org/schema",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/json-schema/makemake-schema.json",
     "title": "makemake config file",
     "description": "Config file for a makemake template",
     "type": "object",
     "properties": {
+        "expandVariables": {
+            "description": "When true, values of variables in `vars` will be expanded with default variables and variables from the CLI. False by default for backwards compatibility.",
+            "type": "boolean"
+        },
         "files": {
             "description": "Dictionary of filenames (relative to the template) that describes what to do with the files",
             "type": "object",
