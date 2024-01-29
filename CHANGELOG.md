@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v1.1.0
+## v2.0.0
 - Significantly speed up loading templates
 - Unset variables no longer expand to `' '` but `''`
 - If now checks whether variable is defined instead of whether the value is
