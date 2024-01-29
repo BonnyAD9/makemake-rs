@@ -14,6 +14,7 @@
 - Support symlinks
 - Support ignoring, making, copying and renaming directories and symlinks
 - Add option to expand variable values
+- Add parenthesis to expressions
 
 ## v1.1.1
 - Prepare for AUR release

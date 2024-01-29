@@ -1,0 +1,3 @@
+${a (x ? ' there' : ' there') '!'}
+${(x ? y : z) ? 'hello there!' : 'lol'}
+${(x ? z : y) ? 'lol' : 'hello there!'}

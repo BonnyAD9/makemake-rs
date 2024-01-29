@@ -8,6 +8,8 @@ pub enum Token {
     CloseBracket,
     Question,
     Colon,
+    OpenParen,
+    CloseParen,
     Ident(String),
     Literal(String),
 }
@@ -18,6 +20,8 @@ impl Display for Token {
             Self::CloseBracket => f.write_char('}'),
             Self::Question => f.write_char('?'),
             Self::Colon => f.write_char(':'),
+            Self::OpenParen => f.write_char('('),
+            Self::CloseParen => f.write_char(')'),
             Self::Ident(i) => f.write_str(i),
             Self::Literal(l) => f.write_str(l),
         }
@@ -83,6 +87,14 @@ where
             Some(':') => {
                 self.cur = None;
                 Ok(Some(Token::Colon))
+            }
+            Some('(') => {
+                self.cur = None;
+                Ok(Some(Token::OpenParen))
+            }
+            Some(')') => {
+                self.cur = None;
+                Ok(Some(Token::CloseParen))
             }
             Some('\'') => self.read_literal(),
             Some(a) if a.is_alphabetic() || a == '_' => self.read_ident(),

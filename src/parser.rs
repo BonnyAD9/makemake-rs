@@ -50,6 +50,7 @@ where
         while let Some(t) = self.cur.take() {
             match t {
                 Token::Question => return self.condition(res),
+                Token::OpenParen => res.concat(self.paren()?),
                 Token::Ident(i) => res.concat(Variable::new(i).into()),
                 Token::Literal(l) => res.concat(Literal::new(l).into()),
                 _ => {
@@ -61,6 +62,16 @@ where
         }
 
         Ok(res)
+    }
+
+    fn paren(&mut self) -> Result<Expr> {
+        let res = self.expr()?;
+        if !matches!(self.cur, Some(Token::CloseParen)) {
+            Err(Error::ParserExpected("')'"))
+        } else {
+            self.cur.take();
+            Ok(res)
+        }
     }
 
     fn condition(&mut self, cond: Expr) -> Result<Expr> {
