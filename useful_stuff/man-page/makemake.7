@@ -1,0 +1,244 @@
+.TH MAKEMAKE 7 2024-01-30
+.SH NAME
+makemake \- template format for makemake
+.SH SYNOPSIS
+.B makemake
+[\fB\-c\fR]
+[\fB\-d\fR \fIDIRECTORY\fR]
+.I template
+.SH DESCRIPTION
+This manual page describes the format of templates used in \fBmakemake\fR.
+
+Expressions are enclosed in \fB${\fR and \fB}\fR. They can contain variables,
+literals, parenthesis (\fB(\fR and \fB)\fR), the \fB?:\fR operator and the
+\fB==\fR operator. When there is no operator between two values, the values
+are concatinated.
+
+This is the precedence table:
+.TS
+box center tab(|);
+Cb Cb Cb Cb
+L L L L.
+precedence | operator | description   | asociativity
+1          |          | concatination | left to right
+2          | ==       | equals        | left to right
+3          | ? :      | condition     | left to right
+.TE
+
+You can use parenthesis to modify the precedence and asociativity.
+
+.SS VARIABLES
+Variables in expressions are expanded, the name of variable may contain any
+alphanumeric characters or \fB_\fR. The variables may be defined in a
+\fBmakemake.json\fR file or from the CLI and there are also internal variables:
+
+.TP
+.B _LINUX _WINDOWS _MACOS _IOS _FREEBSD
+Each of them is defined only on the system with that os, and if it is defined
+it expands to the name of the os (that is \fBlinux\fR, \fBwindows\fR,
+\fBmacos\fR, \fBios\fR and \fBfreebsd\fR respectively).
+
+.TP
+.B _OS
+Expands to the name of the os, the names are same as in the previous paragraph.
+
+.TP
+.B _
+Always undefined.
+
+.RE
+Variables with names starting with underscore and upper case letter or number
+are reserved for future internal variables.
+
+.SS LITERALS
+Literals start and end with \fB'\fR. They expand directly to the contents of
+the literal. Literals may also contain escape sequences that start with the
+character \fB\\\fR:
+
+.TP
+\fB\\n\fR
+newline
+
+.TP
+\fB\\r\fR
+carrige return
+
+.TP
+\fB\\t\fR
+tabulator
+
+.TP
+\fB\\\\\fR
+the \fB\\\fR character
+
+.TP
+\fB\\'\fR
+the \fB'\fR character
+
+.RE
+All other character following \fB\\\fR are escaped to the same character, but
+it is not recommended to use that because that may change in the future.
+
+.SS CONCATINATION
+Any set of literals and variables directly after each other are expanded as
+concatination of the expanded values of the variables and literals.
+
+.SS OPERATOR ?:
+This operator signifies condition, it is simmilar to the same oparator for
+example in the C language. It takes first operand before \fB?\fR, second
+between \fB?\fR and \fB:\fR, and the last after \fB:\fR.
+
+If the first operand expands to something defined, the operator will expand
+to the value of the first operand, otherwise it will expand to the value of
+the second operand.
+
+.SS OPERATOR ==
+This operator checks for equality. If the two operands are equal, it expands
+to defined value of the first of the operands, otherwise it expands to \fB_\fR.
+
+In order for two operands to be equal they both must be undefined or both
+defined and have the same value at the same time.
+
+.SS makemake.json
+To configure your template, place file \fBmakemake.json\fR to the root of the
+template directory. The file specifies how the template should be interpreted.
+
+The configuration is a json file where the root object may contain proprties:
+
+.TP
+.B files
+Dictionary of files/directories/symlinkks and the way they should be hanled.
+
+.TP
+.B vars
+Dictionary of variables and their values. These variables will be overwritten
+by the internal variables and by the variables from CLI if they have the same
+name.
+
+.TP
+.B expandVariables
+Boolean that specifies whether the values of variables defined in \fBvars\fR
+should be expanded with internal variables and variables from the CLI.
+
+.RE
+Each file/directory/symlink in the \fBfiles\fR dictionary may have value either
+object with \fBaction\fR and \fBname\fR or only to the action.
+
+.TP
+.B action
+Specifies what should be done with the file/directory/symlink.
+
+.TP
+.B name
+Specifies how the file/directory/symlink should be renamed, this will be
+expanded.
+
+.RE
+The action may be one of the values:
+
+.TP
+.B Copy
+The file/directory/symlink should be copied.
+
+.TP
+.B Make
+The the contents of the file should be expanded. For folder/symlink this is the
+same as \fBCopy\fR.
+
+.TP
+.B Ignore
+The file/directory/symlink should be skipped entirely.
+
+.RE
+.SH EXAMPLE
+.SS CONCATINATION EXAMPLE
+On linux the following will expand to \fBhello linux\fR:
+
+.nf
+.RS
+${'hello ' _OS}
+.RE
+.fi
+
+.SS LITERALS EXAMPLE
+The following will expand to \fBIt's working\fR:
+
+.nf
+.RS
+${'It\\'s working'}
+.RE
+.fi
+
+.SS OPERATOR ?: EXAMPLE
+Each of the following lines will expand to \fBHello World!\fR:
+
+.nf
+.RS
+${'defined value' ? 'Hello World!' : 'something else'}
+${_ ? 'something else' : 'Hello World!'}
+${_ 'defined value' ? 'Hello World!' : 'something else'}
+.RE
+.fi
+
+.SS OPERATOR == EXAMPLE
+Each of the follwing lines will expand to 'Hello World!'
+
+.nf
+.RS
+${'Hello World!' == 'Hello World!'}
+${'a' == 'a' ? 'Hello World!' : 'b'}
+${'a' == 'b' ? 'c' : 'Hello World!'}
+${'a' == 'a' == 'a' ? 'Hello World!' : 'b'}
+${'a' == _ ? 'b' : 'Hello World!'}
+${_ == _ ? 'Hello World!' : 'a'}
+${_ == _ == _ ? 'a' : 'Hello World!'}
+.RE
+.fi
+
+.SS makemake.json EXAMPLE
+
+.nf
+.RS
+{
+    "$schema": "https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/json-schema/makemake-schema.json",
+    "expandVariables": true,
+    "files": {
+        "makemake.json": "Ignore",
+        "README.md": "Ignore",
+        "RM.md": {
+            "action": "Make",
+            "name": "${rm ? 'README.md' : }"
+        },
+        "main.c": {
+            "action": "Make",
+            "name": "${mname ? mname : 'main'}.c"
+        },
+        "Makefile": "Make",
+        ".vscode/launch.json": "Make"
+    },
+    "vars": {
+        "cc": "cc",
+        "dflags": "-g -Wall -std=c17 -fsanitize=address ${adflags}",
+        "rflags": "-std=c17 -DNDEBUG -O3 ${arflags}"
+    }
+}
+.RE
+.fi
+
+The \fB$schema\fR can be used by editors to provide suggestions and to verify
+the configuration.
+
+Variables in \fBvars\fR are first expanded and than they may be overwritten by
+an internal variable or variable from CLI if it has the same name.
+
+.SH FILES
+.TP
+.B makemake.json
+This is configuration file of template in its root directory.
+
+.TP
+.B ~/.config/makemake/templates
+Here are stored the templates created with the \fB-c\fR option.
+
+.SH AUTHOR
+Jakub Antonín Štigler (BonnyAD9, Bonny4)
