@@ -1,5 +1,7 @@
 use std::{
-    borrow::Cow, collections::HashMap, io::{stdout, IsTerminal}
+    borrow::Cow,
+    collections::HashMap,
+    io::{stdout, IsTerminal},
 };
 
 use termal::eprintmcln;

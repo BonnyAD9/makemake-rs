@@ -81,7 +81,9 @@ where
 }
 
 impl<'a> MakeConfig<'a> {
-    fn load_internal_variables(vars: &mut HashMap<Cow<'a, str>, Cow<'a, str>>) {
+    fn load_internal_variables(
+        vars: &mut HashMap<Cow<'a, str>, Cow<'a, str>>,
+    ) {
         #[cfg(target_os = "linux")]
         {
             vars.entry("_LINUX".into()).or_insert("linux".into());
@@ -109,7 +111,10 @@ impl<'a> MakeConfig<'a> {
         }
     }
 
-    fn init(&mut self, mut vars: HashMap<Cow<'a, str>, Cow<'a, str>>) -> Result<()> {
+    fn init(
+        &mut self,
+        mut vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
+    ) -> Result<()> {
         Self::load_internal_variables(&mut vars);
 
         if self.expand_variables {
@@ -120,7 +125,10 @@ impl<'a> MakeConfig<'a> {
         Ok(())
     }
 
-    fn expand_variables(&mut self, vars: &HashMap<Cow<'a, str>, Cow<'a, str>>) -> Result<()> {
+    fn expand_variables(
+        &mut self,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
+    ) -> Result<()> {
         for v in self.vars.values_mut() {
             let mut res = String::new();
             expand(vars, &mut v.chars().map(|c| Ok(c)), &mut res)?;
@@ -295,7 +303,11 @@ impl<'a> MakeConfig<'a> {
     }
 }
 
-fn expand<'a, I, W>(vars: &HashMap<Cow<'a, str>, Cow<'a, str>>, src: &mut I, dst: &mut W) -> Result<()>
+fn expand<'a, I, W>(
+    vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
+    src: &mut I,
+    dst: &mut W,
+) -> Result<()>
 where
     I: Iterator<Item = Result<char>>,
     W: Write,
