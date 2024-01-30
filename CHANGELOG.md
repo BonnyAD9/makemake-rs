@@ -16,6 +16,7 @@
 - Add option to expand variable values
 - Add parenthesis to expressions
 - Add equals to expressions
+- Add the _OS variable
 
 ## v1.1.1
 - Prepare for AUR release
