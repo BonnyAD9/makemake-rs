@@ -2,6 +2,11 @@
 name = "makemake"
 version = "2.0.0"
 edition = "2021"
+license-file = "LICENSE"
+description = "Create and load folder templates."
+homepage = "https://github.com/BonnyAD9/makemake-rs"
+repository = "https://github.com/BonnyAD9/makemake-rs"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
