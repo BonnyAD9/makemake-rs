@@ -276,7 +276,7 @@ Version {}
 Ehen option can be overriden, it means that it can be specified multiple
 times, and the last occurence takes effect.
 
-See {'w bold}MAKEMAKE(7){'_} for description of the template format.
+See {'w bold}makemake(7){'_} for description of the template format.
 ",
         v.unwrap_or("unknown")
     );
