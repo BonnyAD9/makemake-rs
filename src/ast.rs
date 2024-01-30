@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Write, mem};
+use std::{borrow::Cow, collections::HashMap, fmt::Write, mem};
 
 use crate::{err::Result, writer::FakeWriter};
 
@@ -23,10 +23,10 @@ pub struct Condition {
 }
 
 impl Expr {
-    pub fn eval<W>(
+    pub fn eval<'a, W>(
         self,
         res: &mut W,
-        vars: &HashMap<String, String>,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
     ) -> Result<bool>
     where
         W: Write,
@@ -88,15 +88,15 @@ impl Variable {
         Self(name)
     }
 
-    pub fn eval<W>(
+    pub fn eval<'a, W>(
         self,
         res: &mut W,
-        vars: &HashMap<String, String>,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
     ) -> Result<bool>
     where
         W: Write,
     {
-        if let Some(v) = vars.get(&self.0) {
+        if let Some(v) = vars.get(&Cow::Owned(self.0)) {
             res.write_str(v)?;
             Ok(true)
         } else {
@@ -124,10 +124,10 @@ impl Concat {
         Self(exprs)
     }
 
-    pub fn eval<W>(
+    pub fn eval<'a, W>(
         self,
         res: &mut W,
-        vars: &HashMap<String, String>,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
     ) -> Result<bool>
     where
         W: Write,
@@ -144,10 +144,10 @@ impl Equals {
         Self(Box::new(l), Box::new(r))
     }
 
-    pub fn eval<W>(
+    pub fn eval<'a, W>(
         self,
         res: &mut W,
-        vars: &HashMap<String, String>,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
     ) -> Result<bool>
     where
         W: Write,
@@ -175,10 +175,10 @@ impl Condition {
         }
     }
 
-    pub fn eval<W>(
+    pub fn eval<'a, W>(
         self,
         res: &mut W,
-        vars: &HashMap<String, String>,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
     ) -> Result<bool>
     where
         W: Write,

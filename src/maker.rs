@@ -15,13 +15,13 @@ use utf8_chars::BufReadCharsExt;
 use crate::{err::Result, parser::parse, writer::ToFmtWrite};
 
 #[derive(Serialize, Deserialize)]
-struct MakeConfig {
+struct MakeConfig<'a> {
     #[serde(default, rename = "expandVariables")]
     expand_variables: bool,
     #[serde(default)]
     files: HashMap<PathBuf, MakeInfo>,
     #[serde(default)]
-    vars: HashMap<String, String>,
+    vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -56,10 +56,10 @@ where
     copy_dir(src, out)
 }
 
-pub fn load_template<P1, P2>(
+pub fn load_template<'a, P1, P2>(
     src: P1,
     dst: P2,
-    vars: HashMap<String, String>,
+    vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
 ) -> Result<()>
 where
     P1: AsRef<Path>,
@@ -80,36 +80,36 @@ where
     }
 }
 
-impl MakeConfig {
-    fn load_internal_variables(vars: &mut HashMap<String, String>) {
+impl<'a> MakeConfig<'a> {
+    fn load_internal_variables(vars: &mut HashMap<Cow<'a, str>, Cow<'a, str>>) {
         #[cfg(target_os = "linux")]
         {
-            vars.entry("_LINUX".to_owned()).or_insert("linux".to_owned());
-            vars.entry("_OS".to_owned()).or_insert("linux".to_owned());
+            vars.entry("_LINUX".into()).or_insert("linux".into());
+            vars.entry("_OS".into()).or_insert("linux".into());
         }
         #[cfg(target_os = "windows")]
         {
-            vars.entry("_WINDOWS".to_owned()).or_insert("windows".to_owned());
-            vars.entry("_OS".to_owned()).or_insert("windows".to_owned());
+            vars.entry("_WINDOWS".into()).or_insert("windows".into());
+            vars.entry("_OS".into()).or_insert("windows".into());
         }
         #[cfg(target_os = "macos")]
         {
-            vars.entry("_MACOS".to_owned()).or_insert("macos".to_owned());
-            vars.entry("_OS".to_owned()).or_insert("macos".to_owned());
+            vars.entry("_MACOS".into()).or_insert("macos".into());
+            vars.entry("_OS".into()).or_insert("macos".into());
         }
         #[cfg(target_os = "ios")]
         {
-            vars.entry("_IOS".to_owned()).or_insert("ios".to_owned());
-            vars.entry("_OS".to_owned()).or_insert("ios".to_owned());
+            vars.entry("_IOS".into()).or_insert("ios".into());
+            vars.entry("_OS".into()).or_insert("ios".into());
         }
         #[cfg(target_os = "freebsd")]
         {
-            vars.entry("_FREEBSD".to_owned()).or_insert("freebsd".to_owned());
-            vars.entry("_OS".to_owned()).or_insert("freebsd".to_owned());
+            vars.entry("_FREEBSD".into()).or_insert("freebsd".into());
+            vars.entry("_OS".into()).or_insert("freebsd".into());
         }
     }
 
-    fn init(&mut self, mut vars: HashMap<String, String>) -> Result<()> {
+    fn init(&mut self, mut vars: HashMap<Cow<'a, str>, Cow<'a, str>>) -> Result<()> {
         Self::load_internal_variables(&mut vars);
 
         if self.expand_variables {
@@ -120,11 +120,11 @@ impl MakeConfig {
         Ok(())
     }
 
-    fn expand_variables(&mut self, vars: &HashMap<String, String>) -> Result<()> {
+    fn expand_variables(&mut self, vars: &HashMap<Cow<'a, str>, Cow<'a, str>>) -> Result<()> {
         for v in self.vars.values_mut() {
             let mut res = String::new();
             expand(vars, &mut v.chars().map(|c| Ok(c)), &mut res)?;
-            *v = res;
+            *v = res.into();
         }
 
         Ok(())
@@ -295,7 +295,7 @@ impl MakeConfig {
     }
 }
 
-fn expand<I, W>(vars: &HashMap<String, String>, src: &mut I, dst: &mut W) -> Result<()>
+fn expand<'a, I, W>(vars: &HashMap<Cow<'a, str>, Cow<'a, str>>, src: &mut I, dst: &mut W) -> Result<()>
 where
     I: Iterator<Item = Result<char>>,
     W: Write,

@@ -1,6 +1,5 @@
 use std::{
-    collections::HashMap,
-    io::{stdout, IsTerminal},
+    borrow::Cow, collections::HashMap, io::{stdout, IsTerminal}
 };
 
 use termal::eprintmcln;
@@ -50,7 +49,7 @@ pub struct Args<'a> {
     pub template: Option<&'a str>,
     pub directory: Option<&'a str>,
     pub action: Option<Action>,
-    pub vars: HashMap<String, String>,
+    pub vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
     pub prompt_answer: Yna,
 }
 
@@ -191,9 +190,9 @@ impl<'a> Args<'a> {
                 arg if arg.starts_with("-D") => {
                     let arg = &arg[2..];
                     if let Some((name, value)) = arg.split_once('=') {
-                        res.vars.insert(name.to_owned(), value.to_owned());
+                        res.vars.insert(name.into(), value.into());
                     } else {
-                        res.vars.insert(arg.to_owned(), String::new());
+                        res.vars.insert(arg.into(), "".into());
                     }
                 }
                 arg if arg.starts_with("-") => {
