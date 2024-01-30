@@ -1,9 +1,19 @@
 <?xml version="1.0" standalone="no"?>
-<svg viewBox="0 0 30 40" preserveAspectRatio="xMidYMid meet" overflow="visible">
-    <pattern id="p1" viewBox="0 0 30 40" height="40" width="30"
-             patternUnits="userSpaceOnUse">
+<svg viewBox="-5 0 970 40" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="start-clip">
+            <rect x="-5" y="0" width="35" height="40" />
+        </clipPath>
+        <clipPath id="end-clip">
+            <rect x="930" y="0" width="35" height="40" />
+        </clipPath>
+    </defs>
+    <pattern id="p1" viewBox="0 0 30 40" height="40" width="30" patternUnits="userSpaceOnUse">
         <path d="M0,40 L0,10 L15,20 L30,10 L30,40" stroke-width="10" stroke="#F80" fill="transparent" />
-      <rect width="30" height="40" fill="none" stroke="brown" />
+        <rect width="30" height="40" fill="none" stroke="none" />
     </pattern>
-    <rect fill="url(#p1)" x="-1500" y="0" width="3000" height="40" />
+
+    <path d="M0,50 L0,10 L15,20 L30,10 L30,50" stroke-width="10" stroke="#F80" fill="transparent" clip-path="url(#start-clip)" />
+    <rect fill="url(#p1)" x="25" y="0" width="910" height="40" />
+    <path d="M930,50 L930,10 L945,20 L960,10 L960,50" stroke-width="10" stroke="#F80" fill="transparent" clip-path="url(#end-clip)" />
 </svg>

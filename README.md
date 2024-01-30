@@ -1,29 +1,5 @@
 # Makemake
-
-<div style="width: 100%; height: 30px; overflow: hidden;">
-    <svg
-        height="100%"
-        viewBox="0 0 30 40"
-        preserveAspectRatio="xMidYMid meet"
-        overflow="visible"
-    >
-        <pattern
-            id="p1"
-            viewBox="0 0 30 40"
-            height="40" width="30"
-            patternUnits="userSpaceOnUse"
-        >
-            <path
-                d="M0,40 L0,10 L15,20 L30,10 L30,40"
-                stroke-width="10"
-                stroke="#F80"
-                fill="transparent"
-            />
-            <rect width="30" height="40" fill="none" stroke="none" />
-        </pattern>
-        <rect fill="url(#p1)" x="-1500" y="0" width="3000" height="40" />
-    </svg>
-</div>
+![makemake](assets/svg/repeat.svg)
 
 Create and load folder templates, now in rust.
 
