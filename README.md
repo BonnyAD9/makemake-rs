@@ -1,8 +1,31 @@
-# makemake-rs
-Create and load folder templates, now in rust.
+# Makemake
 
-This is overhaul of [BonnyAD9/MakeMake](https://github.com/BonnyAD9/MakeMake) in rust. This doesn't have all the features that the original has yet,
-and it will not be compatible with both the original templates and the original config file.
+<div style="width: 100%; height: 30px; overflow: hidden;">
+    <svg
+        height="100%"
+        viewBox="0 0 30 40"
+        preserveAspectRatio="xMidYMid meet"
+        overflow="visible"
+    >
+        <pattern
+            id="p1"
+            viewBox="0 0 30 40"
+            height="40" width="30"
+            patternUnits="userSpaceOnUse"
+        >
+            <path
+                d="M0,40 L0,10 L15,20 L30,10 L30,40"
+                stroke-width="10"
+                stroke="#F80"
+                fill="transparent"
+            />
+            <rect width="30" height="40" fill="none" stroke="none" />
+        </pattern>
+        <rect fill="url(#p1)" x="-1500" y="0" width="3000" height="40" />
+    </svg>
+</div>
+
+Create and load folder templates, now in rust.
 
 ## Usage
 Show help:
@@ -23,34 +46,11 @@ makemake vscm
 And more! See help to learn more.
 
 ## Templates
-If you want to see or just use some templates see [BonnyAD9/makemake-templates](https://github.com/BonnyAD9/makemake-templates)
+If you want to see or just use some templates see
+[BonnyAD9/makemake-templates](https://github.com/BonnyAD9/makemake-templates)
 
 ## How to get it
-For Arch based distros you can use [AUR](https://aur.archlinux.org/packages/makemake)
-
-## Comparison to the old makemake
-### Features
-- [X] Copying files
-- [X] Creating directories
-- [X] Variables in files
-- [X] Variables in names
-- [X] Literals in files
-- [X] Literals in names
-- [X] Simple branching in files
-- [X] Simple branching in names
-- [X] Ignore config file
-- [X] Loading template source
-
-### Improvements
-- [X] Speed
-- [X] Memory usage
-- [X] Doesn't crash 2 times when creating the first template
-- [X] Whitespace in expressions has no meaning other than separation
-- [X] More friendly syntax and config file when creating template
-- [X] Conditionally ignore files
-- [X] Internal variables
-- [X] Json shema for the `makemake.json` files
-- [X] Default prompt answer from CLI
+- From the [AUR](https://aur.archlinux.org/packages/makemake)
 
 ## Links
 - **Author:** [BonnyAD9](https://github.com/BonnyAD9)
