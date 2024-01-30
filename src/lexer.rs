@@ -10,6 +10,7 @@ pub enum Token {
     Colon,
     OpenParen,
     CloseParen,
+    Equals,
     Ident(String),
     Literal(String),
 }
@@ -22,6 +23,7 @@ impl Display for Token {
             Self::Colon => f.write_char(':'),
             Self::OpenParen => f.write_char('('),
             Self::CloseParen => f.write_char(')'),
+            Self::Equals => f.write_str("=="),
             Self::Ident(i) => f.write_str(i),
             Self::Literal(l) => f.write_str(l),
         }
@@ -95,6 +97,15 @@ where
             Some(')') => {
                 self.cur = None;
                 Ok(Some(Token::CloseParen))
+            }
+            Some('=') => {
+                self.next_chr()?;
+                if !matches!(self.cur, Some('=')) {
+                    Err(Error::LexerExpect("'='"))
+                } else {
+                    self.cur = None;
+                    Ok(Some(Token::Equals))
+                }
             }
             Some('\'') => self.read_literal(),
             Some(a) if a.is_alphabetic() || a == '_' => self.read_ident(),

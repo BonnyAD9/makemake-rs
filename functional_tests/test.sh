@@ -4,4 +4,7 @@ cd ..
 cargo build -r
 cd -
 
-./test_parenthesis/test.sh
+printf 'parenthesis: '
+./parenthesis/test.sh
+printf 'equals:      '
+./equals/test.sh

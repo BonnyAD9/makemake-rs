@@ -7,12 +7,14 @@ pub enum Expr {
     Variable(Variable),
     Literal(Literal),
     Concat(Concat),
+    Equals(Equals),
     Condition(Condition),
 }
 
 pub struct Variable(String);
 pub struct Literal(String);
 pub struct Concat(Vec<Expr>);
+pub struct Equals(Box<Expr>, Box<Expr>);
 
 pub struct Condition {
     cond: Box<Expr>,
@@ -34,6 +36,7 @@ impl Expr {
             Self::Variable(v) => v.eval(res, vars).map(|a| a.into()),
             Self::Literal(l) => l.eval(res),
             Self::Concat(c) => c.eval(res, vars),
+            Self::Equals(e) => e.eval(res, vars),
             Self::Condition(c) => c.eval(res, vars),
         }
     }
@@ -65,6 +68,12 @@ impl From<Literal> for Expr {
 impl From<Concat> for Expr {
     fn from(value: Concat) -> Self {
         Self::Concat(value)
+    }
+}
+
+impl From<Equals> for Expr {
+    fn from(value: Equals) -> Self {
+        Self::Equals(value)
     }
 }
 
@@ -127,6 +136,33 @@ impl Concat {
             .into_iter()
             .map(|e| e.eval(res, vars))
             .try_fold(true, |a, b| Ok(a | b?))
+    }
+}
+
+impl Equals {
+    pub fn new(l: Expr, r: Expr) -> Self {
+        Self(Box::new(l), Box::new(r))
+    }
+
+    pub fn eval<W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<String, String>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
+        let mut l = String::new();
+        let mut r = String::new();
+        let lres = self.0.eval(&mut l, vars)?;
+        let rres = self.1.eval(&mut r, vars)?;
+
+        if lres == rres && l == r {
+            res.write_str(&l)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 

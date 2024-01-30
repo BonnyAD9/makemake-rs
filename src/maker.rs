@@ -83,15 +83,15 @@ where
 impl MakeConfig {
     fn load_internal_variables(vars: &mut HashMap<String, String>) {
         #[cfg(target_os = "linux")]
-        vars.insert("_LINUX".to_owned(), "linux".to_owned());
+        vars.entry("_LINUX".to_owned()).or_insert("linux".to_owned());
         #[cfg(target_os = "windows")]
-        vars.insert("_WINDOWS".to_owned(), "windows".to_owned());
+        vars.entry("_WINDOWS".to_owned()).or_insert("windows".to_owned());
         #[cfg(target_os = "macos")]
-        vars.insert("_MACOS".to_owned(), "macos".to_owned());
+        vars.entry("_MACOS".to_owned()).or_insert("macos".to_owned());
         #[cfg(target_os = "ios")]
-        vars.insert("_IOS".to_owned(), "ios".to_owned());
+        vars.entry("_IOS".to_owned()).or_insert("ios".to_owned());
         #[cfg(target_os = "freebsd")]
-        vars.insert("_FREEBSD".to_owned(), "freebsd".to_owned());
+        vars.entry("_FREEBSD".to_owned()).or_insert("freebsd".to_owned());
     }
 
     fn init(&mut self, mut vars: HashMap<String, String>) -> Result<()> {

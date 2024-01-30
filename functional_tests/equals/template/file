@@ -1,0 +1,13 @@
+${'hello' == 'hello' ? 'success' : 'failure'}
+${'hello' == 'hi' ? 'failure' : 'success'}
+${a == 'hello' ? 'success' : 'failure'}
+${a == 'hi' ? 'failure' : 'success'}
+${a == a ? 'success' : 'failure'}
+${a == b ? 'failure' : 'success'}
+${'hello' == _ ? 'falure' : 'success'}
+${a == _ ? 'failure' : 'success'}
+${_ == _ ? 'success' : 'failure'}
+${'hello' == 'hello' == 'hello' ? 'success' : 'failure'}
+${'hello' == 'hi' == _ ? 'success' : 'failure'}
+${_ == _ == _ ? 'failure' : 'success'}
+${b == _ ? 'failure' : 'success'}

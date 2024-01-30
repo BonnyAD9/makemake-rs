@@ -1,7 +1,7 @@
 use result::OptionResultExt;
 
 use crate::{
-    ast::{Condition, Expr, Literal, Variable},
+    ast::{Condition, Equals, Expr, Literal, Variable},
     err::{Error, Result},
     lexer::{Lexer, Token},
 };
@@ -51,6 +51,7 @@ where
             match t {
                 Token::Question => return self.condition(res),
                 Token::OpenParen => res.concat(self.paren()?),
+                Token::Equals => res = self.equals(res)?,
                 Token::Ident(i) => res.concat(Variable::new(i).into()),
                 Token::Literal(l) => res.concat(Literal::new(l).into()),
                 _ => {
@@ -58,7 +59,7 @@ where
                     break;
                 }
             }
-            self.next_tok()?;
+            self.get_tok()?;
         }
 
         Ok(res)
@@ -72,6 +73,32 @@ where
             self.cur.take();
             Ok(res)
         }
+    }
+
+    fn concat(&mut self) -> Result<Expr> {
+        self.get_tok()?;
+
+        let mut res = Expr::None;
+
+        while let Some(t) = self.cur.take() {
+            match t {
+                Token::OpenParen => res.concat(self.paren()?),
+                Token::Ident(i) => res.concat(Variable::new(i).into()),
+                Token::Literal(l) => res.concat(Literal::new(l).into()),
+                _ => {
+                    self.cur = Some(t);
+                    break;
+                }
+            }
+            self.next_tok()?;
+        }
+
+        Ok(res)
+    }
+
+    fn equals(&mut self, l: Expr) -> Result<Expr> {
+        let r = self.concat()?;
+        Ok(Equals::new(l, r).into())
     }
 
     fn condition(&mut self, cond: Expr) -> Result<Expr> {
