@@ -219,7 +219,7 @@ Version {}
     Bahaves according to the options, with no options shows this help.
 
 {'g}Options:
-  {'y}-h  --help{'_}
+  {'y}-h  -?  --help{'_}
     Shows this help.
 
   {'y}-c  --create{'_}
@@ -275,6 +275,8 @@ Version {}
 
 Ehen option can be overriden, it means that it can be specified multiple
 times, and the last occurence takes effect.
+
+See {'w bold}MAKEMAKE(7){'_} for description of the template format.
 ",
         v.unwrap_or("unknown")
     );

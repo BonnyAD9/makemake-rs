@@ -6,6 +6,10 @@ makemake \- template format for makemake
 [\fB\-c\fR]
 [\fB\-d\fR \fIDIRECTORY\fR]
 .I template
+
+.B makemake
+[\fB\-h\fR]
+
 .SH DESCRIPTION
 This manual page describes the format of templates used in \fBmakemake\fR.
 
@@ -150,6 +154,25 @@ same as \fBCopy\fR.
 The file/directory/symlink should be skipped entirely.
 
 .RE
+.SH OPTIONS
+
+The following is only few of the available options. For full description of
+options use \fBmakemake \-h\fR.
+
+.TP
+\fB\-c \-\-create\fR
+create new template
+
+.TP
+\fB\-d \-\-directory\fR
+changes the directory where to load/create/edit template. This is the cwd by
+default.
+
+.TP
+\fB\-h \-? \-\-help\fR
+shows the help for the CLI.
+
+.RE
 .SH EXAMPLE
 .SS CONCATINATION EXAMPLE
 On linux the following will expand to \fBhello linux\fR:
@@ -240,5 +263,13 @@ This is configuration file of template in its root directory.
 .B ~/.config/makemake/templates
 Here are stored the templates created with the \fB-c\fR option.
 
+.SH SEE ALSO
+
+.TP
+\fBmakemake \-h\fR
+use this command to show all the options available for the \fBmakemake\fR
+command.
+
+.RE
 .SH AUTHOR
 Jakub Antonín Štigler (BonnyAD9, Bonny4)
