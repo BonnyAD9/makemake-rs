@@ -39,6 +39,7 @@ pub enum Yna {
 #[derive(Clone, Copy, Debug)]
 pub enum Action {
     Help,
+    Version,
     Create,
     Load,
     Remove,
@@ -109,6 +110,7 @@ impl<'a> Args<'a> {
         while let Some(arg) = args.next() {
             match arg {
                 "-h" | "--help" | "-?" => res.set_action(Action::Help)?,
+                "--version" => res.set_action(Action::Version)?,
                 "-c" | "--create" => res.set_action(Action::Create)?,
                 "-t" | "--template" => {
                     res.set_template(args.expect("template name")?)?
@@ -217,7 +219,7 @@ impl<'a> Args<'a> {
 
     pub fn check_unused(&self) {
         match self.get_action() {
-            Action::Help => {
+            Action::Help | Action::Version => {
                 self.unused_template();
                 self.unused_directory();
                 self.unused_vars();
@@ -281,7 +283,7 @@ impl<'a> Args<'a> {
     }
 
     pub fn get_action(&self) -> Action {
-        if self.template.is_none() {
+        if self.action.is_none() && self.template.is_none() {
             Action::Help
         } else {
             self.action.unwrap_or(Action::Load)

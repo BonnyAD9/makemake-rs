@@ -45,6 +45,7 @@ fn start() -> Result<()> {
         Action::Remove => remove(args)?,
         Action::Edit => edit(args)?,
         Action::Help => help(args),
+        Action::Version => version(args),
         Action::List => list()?,
     }
 
@@ -174,6 +175,26 @@ fn get_template_dir(name: &str) -> Result<PathBuf> {
     config.push("makemake/templates");
     config.push(name);
     Ok(config)
+}
+
+fn version(args: Args) {
+    let v = option_env!("CARGO_PKG_VERSION").unwrap_or("unknown");
+    let signature: Cow<str> = if args.use_color() {
+        termal::gradient("BonnyAD9", (250, 50, 170), (180, 50, 240)).into()
+    } else {
+        "BonnyAD9".into()
+    };
+
+    let exe = std::env::current_exe();
+    let exe = exe.as_ref().map(|e| e.to_string_lossy()).unwrap_or("unknown".into());
+
+    printmcln!(
+        args.use_color(),
+        "makemake v{v}
+Author: {signature}{'_}
+Exe path: {exe}
+"
+    )
 }
 
 /// Prints colorful help to the stdout.

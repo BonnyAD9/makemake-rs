@@ -17,6 +17,7 @@
 - Add parenthesis to expressions
 - Add equals to expressions
 - Add the _OS variable
+- Add `--version` CLI argument
 
 ## v1.1.1
 - Prepare for AUR release
