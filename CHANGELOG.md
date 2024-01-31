@@ -1,23 +1,28 @@
 # CHANGELOG
 
 ## v2.0.0
-- Significantly speed up loading templates
-- Unset variables no longer expand to `' '` but `''`
-- If now checks whether variable is defined instead of whether the value is
-  empty
-- Builtin os variables now expand to the name of the os instead of to `'true'`
-- Check for errors before asking for confirmation
-- Better error messages
-- More ways to use CLI
-- Warn of unused arguments
-- Choose whether to print with colors
+### New features
+- More intuitive ways to use CLI
 - Support symlinks
+- Choose whether to print with colors
 - Support ignoring, making, copying and renaming directories and symlinks
 - Add option to expand variable values
 - Add parenthesis to expressions
 - Add equals to expressions
 - Add the _OS variable
 - Add `--version` CLI argument
+
+### Changes
+- Unset variables no longer expand to `' '` but `''`
+- Builtin os variables now expand to the name of the os instead of to `'true'`
+- If now checks whether variable is defined instead of whether the value is
+  empty
+
+### Improvements
+- Significantly speed up loading templates
+- Check for errors before asking for confirmation
+- Better error messages
+- Warn of unused arguments
 
 ## v1.1.1
 - Prepare for AUR release
