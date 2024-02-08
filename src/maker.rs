@@ -131,7 +131,7 @@ impl<'a> MakeConfig<'a> {
     ) -> Result<()> {
         for v in self.vars.values_mut() {
             let mut res = String::new();
-            expand(vars, &mut v.chars().map(|c| Ok(c)), &mut res)?;
+            expand(vars, &mut v.chars().map(Ok), &mut res)?;
             *v = res.into();
         }
 
@@ -185,12 +185,12 @@ impl<'a> MakeConfig<'a> {
             match action {
                 MakeType::Ignore => {}
                 _ => {
-                    let adr = read_link(&src)?;
+                    let adr = read_link(src)?;
                     symlink(adr, dst)?;
                 }
             }
         } else {
-            let adr = read_link(&src)?;
+            let adr = read_link(src)?;
             symlink(adr, dst)?;
         }
 
@@ -212,7 +212,7 @@ impl<'a> MakeConfig<'a> {
 
         // src is always subpath of rsrc
         // let srel = diff_paths(&src, &rsrc).unwrap();
-        let srel = src.strip_prefix(&rsrc)?;
+        let srel = src.strip_prefix(rsrc)?;
 
         if let Some(info) = self.files.get(srel) {
             let action = match info {
@@ -254,7 +254,7 @@ impl<'a> MakeConfig<'a> {
 
         // src is always subpath of rsrc
         // let srel = diff_paths(&src, &rsrc).unwrap();
-        let srel = src.strip_prefix(&rsrc)?;
+        let srel = src.strip_prefix(rsrc)?;
 
         if let Some(info) = self.files.get(srel) {
             let action = match info {
@@ -288,10 +288,10 @@ impl<'a> MakeConfig<'a> {
         info: &FileInfo,
         path: &mut PathBuf,
     ) -> Result<MakeType> {
-        if info.name.len() != 0 {
+        if !info.name.is_empty() {
             let mut name = String::new();
-            self.expand(&mut info.name.chars().map(|a| Ok(a)), &mut name)?;
-            if name.len() == 0 {
+            self.expand(&mut info.name.chars().map(Ok), &mut name)?;
+            if name.is_empty() {
                 Ok(MakeType::Ignore)
             } else {
                 path.set_file_name(name);

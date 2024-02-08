@@ -199,7 +199,7 @@ impl<'a> Args<'a> {
                         res.vars.insert(arg.into(), "".into());
                     }
                 }
-                arg if arg.starts_with("-") => {
+                arg if arg.starts_with('-') => {
                     return Err(ArgError::InvalidOption(arg.to_owned()))
                 }
                 _ => res.set_template(arg)?,

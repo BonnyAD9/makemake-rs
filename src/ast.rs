@@ -33,7 +33,7 @@ impl Expr {
     {
         match self {
             Self::None => Ok(false),
-            Self::Variable(v) => v.eval(res, vars).map(|a| a.into()),
+            Self::Variable(v) => v.eval(res, vars),
             Self::Literal(l) => l.eval(res),
             Self::Concat(c) => c.eval(res, vars),
             Self::Equals(e) => e.eval(res, vars),

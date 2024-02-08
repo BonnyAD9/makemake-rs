@@ -90,16 +90,16 @@ fn load(args: Args) -> Result<()> {
     }
 
     // true if the directory exists and isn't empty
-    if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
-        if !prompt_yn(
+    if read_dir(dest).ok().and_then(|mut d| d.next()).is_some()
+        && !prompt_yn(
             &format!(
                 "the directory {dest} is not empty.\n\
             Do you want to load the template anyway? [y/N]: "
             ),
             args.prompt_answer,
-        )? {
-            return Ok(());
-        }
+        )?
+    {
+        return Ok(());
     }
 
     load_template(template, dest, args.vars)
@@ -123,16 +123,16 @@ fn edit(args: Args) -> Result<()> {
         ));
     }
 
-    if read_dir(dest).ok().and_then(|mut d| d.next()).is_some() {
-        if !prompt_yn(
+    if read_dir(dest).ok().and_then(|mut d| d.next()).is_some()
+        && !prompt_yn(
             &format!(
                 "the directory {dest} is not empty.\n\
             Do you want to load the template source anyway? [y/N]: "
             ),
             args.prompt_answer,
-        )? {
-            return Ok(());
-        }
+        )?
+    {
+        return Ok(());
     }
     copy_dir(template, dest)
 }
@@ -161,11 +161,11 @@ fn prompt_yn(prompt: &str, answ: Yna) -> Result<bool> {
     stdin().read_line(&mut conf)?;
     let conf = conf.trim();
 
-    return match conf {
+    match conf {
         "y" | "Y" => Ok(true),
         "n" | "N" | "" => Ok(false),
         _ => Err(Error::Msg(format!("Invalid option {conf}").into())),
-    };
+    }
 }
 
 /// Gets the directory in which the template with the name `name` is stored.
@@ -186,7 +186,10 @@ fn version(args: Args) {
     };
 
     let exe = std::env::current_exe();
-    let exe = exe.as_ref().map(|e| e.to_string_lossy()).unwrap_or("unknown".into());
+    let exe = exe
+        .as_ref()
+        .map(|e| e.to_string_lossy())
+        .unwrap_or("unknown".into());
 
     printmcln!(
         args.use_color(),
