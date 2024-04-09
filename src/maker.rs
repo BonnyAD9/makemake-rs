@@ -86,7 +86,7 @@ where
             .map(|c| run_command(&c, src, dst))
             .unwrap_or(Ok(()))?;
 
-        conf.init(vars)?;
+        conf.init(vars, dst)?;
         conf.make_dir(src, dst)?;
 
         conf.post_command
@@ -99,9 +99,17 @@ where
 }
 
 impl<'a> MakeConfig<'a> {
-    fn load_internal_variables(
+    fn load_internal_variables<P>(
         vars: &mut HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) {
+        dst: P,
+    ) where
+        P: AsRef<Path>,
+    {
+        if let Some(dname) = dst.as_ref().file_name() {
+            vars.entry("_PDIR".into())
+                .or_insert(dname.to_string_lossy().into_owned().into());
+        }
+
         #[cfg(target_os = "linux")]
         {
             vars.entry("_LINUX".into()).or_insert("linux".into());
@@ -129,11 +137,15 @@ impl<'a> MakeConfig<'a> {
         }
     }
 
-    fn init(
+    fn init<P>(
         &mut self,
         mut vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<()> {
-        Self::load_internal_variables(&mut vars);
+        dst: P,
+    ) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        Self::load_internal_variables(&mut vars, dst);
 
         if self.expand_variables {
             self.expand_variables(&vars)?;
