@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, ffi::OsStr, os::unix::ffi::OsStrExt, path::Path, process::Command};
+use std::{borrow::Cow, collections::HashMap, path::Path, process::Command};
 
 use crate::err::{Error, Result};
 
@@ -19,9 +19,7 @@ where
         .envs(vars.iter().map(|(k, v)| (k.as_ref(), v.as_ref())))
         .output()?;
     if !com.status.success() {
-        let s = OsStr::from_bytes(&com.stdout)
-            .to_string_lossy()
-            .into_owned();
+        let s = String::from_utf8_lossy(&com.stderr).into_owned();
         return Err(Error::CommandUnsuccessful {
             cmd: cmd.to_owned(),
             stderr: s,
