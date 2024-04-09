@@ -47,6 +47,10 @@ it expands to the name of the os (that is \fBlinux\fR, \fBwindows\fR,
 Expands to the name of the os, the names are same as in the previous paragraph.
 
 .TP
+.B _PDIR
+Expands to the name of the project directory.
+
+.TP
 .B _
 Always undefined.
 
@@ -123,6 +127,16 @@ name.
 .B expandVariables
 Boolean that specifies whether the values of variables defined in \fBvars\fR
 should be expanded with internal variables and variables from the CLI.
+
+.TP
+.B preCommand
+Command to run before the files start copying. May contain command and its
+arguments.
+
+.TP
+.B postCommand
+Command to run after the files are copied. May contain command and its
+arguments.
 
 .RE
 Each file/directory/symlink in the \fBfiles\fR dictionary may have value either
