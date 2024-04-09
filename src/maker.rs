@@ -12,10 +12,16 @@ use result::OptionResultExt;
 use serde::{Deserialize, Serialize};
 use utf8_chars::BufReadCharsExt;
 
-use crate::{err::Result, parser::parse, writer::ToFmtWrite};
+use crate::{
+    commander::run_command, err::Result, parser::parse, writer::ToFmtWrite,
+};
 
 #[derive(Serialize, Deserialize)]
 struct MakeConfig<'a> {
+    #[serde(default, rename = "preCommand")]
+    pre_command: Option<String>,
+    #[serde(default, rename = "postCommand")]
+    post_command: Option<String>,
     #[serde(default, rename = "expandVariables")]
     expand_variables: bool,
     #[serde(default)]
@@ -72,8 +78,20 @@ where
     if conf.try_exists()? {
         let conf = File::open(conf)?;
         let mut conf: MakeConfig = serde_json::from_reader(conf)?;
+
+        create_dir_all(dst)?;
+
+        conf.pre_command
+            .as_ref()
+            .map(|c| run_command(&c, src, dst))
+            .unwrap_or(Ok(()))?;
+
         conf.init(vars)?;
         conf.make_dir(src, dst)?;
+
+        conf.post_command
+            .map(|c| run_command(&c, src, dst))
+            .unwrap_or(Ok(()))?;
         Ok(())
     } else {
         copy_dir(src, dst)

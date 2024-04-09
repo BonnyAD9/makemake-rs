@@ -5,6 +5,14 @@
     "description": "Config file for a makemake template",
     "type": "object",
     "properties": {
+        "preCommand": {
+            "description": "Command that runs before the template is created into the folder",
+            "type": "string"
+        },
+        "postCommand": {
+            "description": "Command that runs after the template is created into the folder",
+            "type": "string"
+        },
         "expandVariables": {
             "description": "When true, values of variables in `vars` will be expanded with default variables and variables from the CLI. False by default for backwards compatibility.",
             "type": "boolean"

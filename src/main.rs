@@ -16,6 +16,7 @@ use crate::err::Error;
 
 mod args;
 mod ast;
+mod commander;
 mod err;
 mod lexer;
 mod maker;

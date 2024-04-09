@@ -16,6 +16,8 @@ pub enum Error {
     ParserExpected(&'static str),
     #[error("{}", .0)]
     Msg(Cow<'static, str>),
+    #[error("Command {} failed with stderr:\n{}", .cmd, .stderr)]
+    CommandUnsuccessful { cmd: String, stderr: String },
     #[error(transparent)]
     Arg(#[from] ArgError),
     #[error(transparent)]
