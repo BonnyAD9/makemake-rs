@@ -1,8 +1,8 @@
-use std::{borrow::Cow, ffi::OsStr, os::unix::ffi::OsStrExt, path::Path, process::Command};
+use std::{borrow::Cow, collections::HashMap, ffi::OsStr, os::unix::ffi::OsStrExt, path::Path, process::Command};
 
 use crate::err::{Error, Result};
 
-pub fn run_command<P1, P2>(cmd: &str, cwd: P1, pwd: P2) -> Result<()>
+pub fn run_command<P1, P2>(cmd: &str, cwd: P1, pwd: P2, vars: &HashMap<Cow<str>, Cow<str>>) -> Result<()>
 where
     P1: AsRef<Path>,
     P2: AsRef<Path>,
@@ -16,6 +16,7 @@ where
     let com = Command::new(program.as_ref())
         .args(args)
         .current_dir(pwd)
+        .envs(vars.iter().map(|(k, v)| (k.as_ref(), v.as_ref())))
         .output()?;
     if !com.status.success() {
         let s = OsStr::from_bytes(&com.stdout)

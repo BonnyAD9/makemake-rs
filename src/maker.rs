@@ -85,7 +85,7 @@ where
         let run_cmd = |c: &String| {
             let mut cmd = String::new();
             expand(&conf.vars, &mut c.chars().map(Ok), &mut cmd)?;
-            run_command(&cmd, src, dst)
+            run_command(&cmd, src, dst, &conf.vars)
         };
 
         conf.pre_command
