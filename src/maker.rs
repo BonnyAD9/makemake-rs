@@ -80,17 +80,24 @@ where
         let mut conf: MakeConfig = serde_json::from_reader(conf)?;
 
         create_dir_all(dst)?;
+        conf.init(vars, dst)?;
+
+        let run_cmd = |c: &String| {
+            let mut cmd = String::new();
+            expand(&conf.vars, &mut c.chars().map(Ok), &mut cmd)?;
+            run_command(&cmd, src, dst)
+        };
 
         conf.pre_command
             .as_ref()
-            .map(|c| run_command(&c, src, dst))
+            .map(run_cmd)
             .unwrap_or(Ok(()))?;
 
-        conf.init(vars, dst)?;
         conf.make_dir(src, dst)?;
 
         conf.post_command
-            .map(|c| run_command(&c, src, dst))
+            .as_ref()
+            .map(run_cmd)
             .unwrap_or(Ok(()))?;
         Ok(())
     } else {

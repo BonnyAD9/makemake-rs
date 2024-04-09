@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, os::unix::ffi::OsStrExt, path::Path, process::Command};
+use std::{borrow::Cow, ffi::OsStr, os::unix::ffi::OsStrExt, path::Path, process::Command};
 
 use crate::err::{Error, Result};
 
@@ -7,7 +7,14 @@ where
     P1: AsRef<Path>,
     P2: AsRef<Path>,
 {
-    let com = Command::new(cwd.as_ref().join(cmd))
+    let (program, args) = parse_command(cmd);
+    let mut program: Cow<Path> = Path::new(program).into();
+    if program.starts_with(".") || program.components().count() > 1 {
+        program = cwd.as_ref().join(program).into();
+    }
+
+    let com = Command::new(program.as_ref())
+        .args(args)
         .current_dir(pwd)
         .output()?;
     if !com.status.success() {
@@ -20,4 +27,12 @@ where
         });
     }
     Ok(())
+}
+
+fn parse_command(cmd: &str) -> (&str, Vec<&str>) {
+    if let Some((cmd, args)) = cmd.split_once(|c: char| c.is_ascii_whitespace()) {
+        (cmd, args.split_ascii_whitespace().collect())
+    } else {
+        (cmd, vec![])
+    }
 }
