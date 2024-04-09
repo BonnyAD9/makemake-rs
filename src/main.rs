@@ -216,10 +216,10 @@ fn help(args: Args) {
 Version {}
 
 {'g}Usage:
-  {'w}makemake <template name> {'gr}[options]{'_}
+  {'c}makemake {'w}<template name> {'gr}[options]{'_}
     Behaves according to the options, by default loads template.
 
-  {'w}makemake {'gr}[options]{'_}
+  {'c}makemake {'gr}[options]{'_}
     Bahaves according to the options, with no options shows this help.
 
 {'g}Options:
@@ -248,7 +248,8 @@ Version {}
     overriden.
 
   {'y}-py{'_}, {'y}-pn{'_}, {'y}-pa{'_}
-    Same as '-p yes', '-p no' and '-p ask' respectively.
+    Same as '{'y}-p {'w}yes{'_}', '{'y}-p {'w}no{'_}' and '{'y}-p {'w}ask{'_}'\
+    respectively.
 
   {'y}-d  --directory {'w}<path to directory>{'_}
     Sets the relevant directory path. This is cwd by default.
@@ -262,16 +263,18 @@ Version {}
 
   {'y}-cf  --create-from {'w}<template name> <template surce directory>{'_}
     Creates new template from the directory with the name. (Equivalent to
-    '-c -t <template name> -d <template source directory>'.)
+    '{'y}-c -t {'w}<template name> {'y}-d {'w}<template source directory>{'_}'\
+    .)
 
   {'y}-lt  --load-to {'w}<template name> <destination directory>{'_}
     Loads the given template into the destination directory (will be created
     if it doesn't exist). (Equivalent to
-    '--load <temlate name> -d <destination directory>'.)
+    '{'y}--load {'w}<temlate name> {'y}-d {'w}<destination directory>{'_}'.)
 
   {'y}-ei --edit-in {'w}<template name> <directory>{'_}
     Loads template source to the given direcotry. (Equivalent to
-    '-e -t <template name> -d <template source directory>'.)
+    '{'y}-e -t {'w}<template name> {'y}-d {'w}<template source directory>{'_}'\
+    .)
 
   {'y}--color  --colour {'w}<auto | always | never>
   {'y}--color  --colour{'w}=<auto | always | never>{'_}
