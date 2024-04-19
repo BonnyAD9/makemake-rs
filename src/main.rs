@@ -35,7 +35,7 @@ fn main() -> ExitCode {
 
 fn start() -> Result<()> {
     let args: Vec<_> = env::args().collect();
-    let args = Args::parse(args.iter().skip(1).map(|a| a.as_str()))?;
+    let args = Args::parse(args.iter().skip(1).into())?;
 
     args.check_unused();
 

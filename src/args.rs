@@ -4,18 +4,14 @@ use std::{
     io::{stdout, IsTerminal},
 };
 
+use pareg::{proc::FromArg, ArgIterator, ByRef};
 use termal::eprintmcln;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ArgError {
-    #[error("Expected {} after option '{}'", .exp, .opt)]
-    MissingAfter { exp: &'static str, opt: String },
-    #[error(
-        "Invalid option '{}', If you ment it as template name, use '-t' for \
-        templates which name starts with '-'", .0
-    )]
-    InvalidOption(String),
+    #[error(transparent)]
+    Pareg(pareg::ArgError<'static>),
     #[error("In the arguments the template is set multiple times.")]
     TooManyTemplates,
     #[error("In the arguments the working path is set multiple times.")]
@@ -26,13 +22,22 @@ pub enum ArgError {
     MissingTemplate,
 }
 
+impl<'a> From<pareg::ArgError<'a>> for ArgError {
+    fn from(value: pareg::ArgError<'a>) -> Self {
+        Self::Pareg(value.into_owned())
+    }
+}
+
 pub type ArgResult<T> = Result<T, ArgError>;
 
 /// Yes/No/Auto
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(FromArg, Clone, Copy, PartialEq, Eq)]
 pub enum Yna {
+    #[arg("always")]
     Yes,
+    #[arg("never")]
     No,
+    #[arg("ask")]
     Auto,
 }
 
@@ -56,45 +61,11 @@ pub struct Args<'a> {
     pub prompt_answer: Yna,
 }
 
-struct ArgIterator<'a, I>
-where
-    I: Iterator<Item = &'a str>,
-{
-    inner: I,
-    last: Option<&'a str>,
-}
-
-impl<'a, I> ArgIterator<'a, I>
-where
-    I: Iterator<Item = &'a str>,
-{
-    pub fn new(inner: I) -> Self {
-        Self { inner, last: None }
-    }
-
-    pub fn next(&mut self) -> Option<&'a str> {
-        self.last = self.inner.next();
-        self.last
-    }
-
-    pub fn expect(&mut self, msg: &'static str) -> ArgResult<&'a str> {
-        if let Some(next) = self.inner.next() {
-            self.last = Some(next);
-            Ok(next)
-        } else {
-            let cur = self.last.unwrap_or("");
-            Err(ArgError::MissingAfter {
-                exp: msg,
-                opt: cur.to_owned(),
-            })
-        }
-    }
-}
-
 impl<'a> Args<'a> {
-    pub fn parse<I>(args: I) -> ArgResult<Self>
+    pub fn parse<I>(mut args: ArgIterator<'a, I>) -> ArgResult<Self>
     where
-        I: Iterator<Item = &'a str>,
+        I: Iterator,
+        I::Item: ByRef<&'a str>
     {
         let mut res = Self {
             use_color: Yna::Auto,
@@ -105,91 +76,52 @@ impl<'a> Args<'a> {
             prompt_answer: Yna::Auto,
         };
 
-        let mut args = ArgIterator::new(args);
-
         while let Some(arg) = args.next() {
             match arg {
                 "-h" | "--help" | "-?" => res.set_action(Action::Help)?,
                 "--version" => res.set_action(Action::Version)?,
                 "-c" | "--create" => res.set_action(Action::Create)?,
                 "-t" | "--template" => {
-                    res.set_template(args.expect("template name")?)?
+                    res.set_template(args.next_arg()?)?
                 }
                 "-d" | "--directory" => {
-                    res.set_path(args.expect("path to a directory")?)?
+                    res.set_path(args.next_arg()?)?
                 }
                 "-cf" | "--create-from" => res.set_action_template_path(
                     Action::Create,
-                    args.expect("new template name and new source directory")?,
-                    args.expect("source directory")?,
+                    args.next_arg()?,
+                    args.next_arg()?,
                 )?,
                 "--load" => res.set_action_template(
                     Action::Load,
-                    args.expect("existing template name")?,
+                    args.next_arg()?,
                 )?,
                 "-lt" | "--load-to" => res.set_action_template_path(
                     Action::Load,
-                    args.expect(
-                        "existing template name and destination directory",
-                    )?,
-                    args.expect("destination directory")?,
+                    args.next_arg()?,
+                    args.next_arg()?,
                 )?,
                 "-l" | "--list" => res.set_action(Action::List)?,
                 "-r" | "--remove" => res.set_action(Action::Remove)?,
                 "-e" | "--edit" => res.set_action(Action::Edit)?,
                 "-ei" | "--edit-in" => res.set_action_template_path(
                     Action::Edit,
-                    args.expect(
-                        "existing template name and destination directory",
-                    )?,
-                    args.expect("destination directory")?,
+                    args.next_arg()?,
+                    args.next_arg()?,
                 )?,
                 "-p" | "--prompt-answer" => {
-                    let answ = args.expect("'yes', 'no' or 'ask'")?;
-                    res.prompt_answer = match answ.to_lowercase().as_str() {
-                        "yes" => Yna::Yes,
-                        "no" => Yna::No,
-                        "ask" => Yna::Auto,
-                        _ => {
-                            return Err(ArgError::MissingAfter {
-                                exp: "'yes', 'no' or 'ask'",
-                                opt: arg.to_owned(),
-                            })
-                        }
-                    }
+                    res.prompt_answer = args.next_arg()?;
                 }
                 "-py" => res.prompt_answer = Yna::Yes,
                 "-pn" => res.prompt_answer = Yna::No,
                 "-pa" => res.prompt_answer = Yna::Auto,
                 "--color" | "--colour" => {
-                    let answ = args.expect("'auto', 'always', 'never'")?;
-                    res.use_color = match answ.to_lowercase().as_str() {
-                        "auto" => Yna::Auto,
-                        "always" => Yna::Yes,
-                        "never" => Yna::No,
-                        _ => {
-                            return Err(ArgError::MissingAfter {
-                                exp: "'auto', 'always' or 'never'",
-                                opt: arg.to_owned(),
-                            });
-                        }
-                    };
+                    res.use_color = args.next_arg()?;
                 }
                 arg if arg.starts_with("--color=")
                     || arg.starts_with("--colour=") =>
                 {
-                    let (_, value) = arg.split_once('=').unwrap();
-                    res.use_color = match value.to_lowercase().as_str() {
-                        "auto" => Yna::Auto,
-                        "always" => Yna::Yes,
-                        "never" => Yna::No,
-                        _ => {
-                            return Err(ArgError::MissingAfter {
-                                exp: "'auto', 'always' or 'never'",
-                                opt: arg.to_owned(),
-                            });
-                        }
-                    };
+                    res.use_color = args.cur_key_val::<&str, _>('=')?.1;
                 }
                 arg if arg.starts_with("-D") => {
                     let arg = &arg[2..];
@@ -200,7 +132,7 @@ impl<'a> Args<'a> {
                     }
                 }
                 arg if arg.starts_with('-') => {
-                    return Err(ArgError::InvalidOption(arg.to_owned()))
+                    return Err(pareg::ArgError::UnknownArgument(arg.into()))?
                 }
                 _ => res.set_template(arg)?,
             } // match
