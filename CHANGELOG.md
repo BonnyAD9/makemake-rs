@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v2.1.0
+### New features
+- Add builtin variable `_DNAME` that is the name of the directory in which the
+  template is used.
+- Add `preCommand` and `postCommand` to *makemake.json*
+
 ## v2.0.0
 ### New features
 - More intuitive ways to use CLI
