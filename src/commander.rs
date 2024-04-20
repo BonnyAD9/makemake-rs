@@ -7,7 +7,10 @@ where
     P1: AsRef<Path>,
     P2: AsRef<Path>,
 {
-    let (program, args) = parse_command(cmd);
+    let args = parse_command(cmd)?;
+    let program = args.first().unwrap();
+    let args = &args[1..];
+
     let mut program: Cow<Path> = Path::new(program).into();
     if program.starts_with(".") || program.components().count() > 1 {
         program = cwd.as_ref().join(program).into();
@@ -28,10 +31,11 @@ where
     Ok(())
 }
 
-fn parse_command(cmd: &str) -> (&str, Vec<&str>) {
-    if let Some((cmd, args)) = cmd.split_once(|c: char| c.is_ascii_whitespace()) {
-        (cmd, args.split_ascii_whitespace().collect())
+fn parse_command(cmd: &str) -> Result<Vec<String>> {
+    let cmd = shell_words::split(cmd)?;
+    if cmd.is_empty() {
+        Err(Error::Msg("Invalid command, missing program.".into()))
     } else {
-        (cmd, vec![])
+        Ok(cmd)
     }
 }

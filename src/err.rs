@@ -28,4 +28,6 @@ pub enum Error {
     SerdeJson(#[from] serde_json::Error),
     #[error(transparent)]
     StripPrefix(#[from] StripPrefixError),
+    #[error(transparent)]
+    ShellParseError(#[from] shell_words::ParseError),
 }
