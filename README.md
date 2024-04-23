@@ -37,7 +37,7 @@ The command will require sudo privilages for copy of the files.
 
 ## Links
 - **Author:** [BonnyAD9][author]
-- **GitHub repository:** [BonnyAD9/makemake-rs](repo)
+- **GitHub repository:** [BonnyAD9/makemake-rs][repo]
 - **Package:** [AUR][aur]
 - **My website:** [bonnyad9.github.io][my-web]
 
