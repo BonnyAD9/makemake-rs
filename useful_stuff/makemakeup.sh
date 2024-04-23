@@ -20,7 +20,7 @@ PKG="https://github.com/BonnyAD9/makemake-rs/archive/refs/tags/v$VERSION.tar.gz"
 
 cd /tmp
 
-if wget -O - "$PKG" | tar xz; then
+if wget -nv -O - "$PKG" | tar xz; then
     true
 else
     exit 1
@@ -35,5 +35,5 @@ else
     exit 1
 fi
 
-echo sudo cp /tmp/makemake/target/release/makemake /usr/bin/makemake '&& \'
-echo sudo cp /tmp/makemake/useful_stuff/man-page/makemake.7 /usr/share/man/man7/makemake.7
+echo 'sudo cp /tmp/makemake/target/release/makemake /usr/bin/makemake && \'
+echo 'sudo cp /tmp/makemake/useful_stuff/man-page/makemake.7 /usr/share/man/man7/makemake.7'
