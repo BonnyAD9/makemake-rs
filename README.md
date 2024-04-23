@@ -29,10 +29,11 @@ If you want to use or just look at some templates see
 
 ## How to get it
 - From the [AUR][aur]
-- Install with this long command:
+- Or install with this long command (works only on linux):
 ```sh
 wget -nv -O - https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/makemakeup.sh | sh && sudo cp /tmp/makemake/target/release/makemake /usr/bin/makemake && sudo cp /tmp/makemake/useful_stuff/man-page/makemake.7 /usr/share/man/man7/makemake.7
 ```
+The command will require sudo privilages for copy of the files.
 
 ## Links
 - **Author:** [BonnyAD9][author]
