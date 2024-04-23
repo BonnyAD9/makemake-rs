@@ -1,7 +1,7 @@
 #!/usr/bin/sh
 
 # install script for makemake
-# wget -O - | sh && sudo cp /tmp/makemake-rs-/target/release/makemake /usr/bin/makemake && cp "/tmp/makemake/useful_stuff/man-page/makemake.7" "/usr/share/man/man7/makemake.7"
+# wget -O - https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/makemakeup.sh | sh && sudo cp /tmp/makemake/target/release/makemake /usr/bin/makemake && sudo cp /tmp/makemake/useful_stuff/man-page/makemake.7 /usr/share/man/man7/makemake.7
 
 check_exists() {
     if type $1 1>/dev/null 2> /dev/null; then
@@ -34,3 +34,6 @@ if cargo build -r; then
 else
     exit 1
 fi
+
+echo sudo cp /tmp/makemake/target/release/makemake /usr/bin/makemake '&& \'
+echo sudo cp /tmp/makemake/useful_stuff/man-page/makemake.7 /usr/share/man/man7/makemake.7
