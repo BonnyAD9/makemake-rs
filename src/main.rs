@@ -45,6 +45,7 @@ fn start() -> Result<()> {
     match args.get_action() {
         Action::Create => create(args)?,
         Action::Alias => alias(args)?,
+        Action::Config => configure(args)?,
         Action::Load => load(args)?,
         Action::Remove => remove(args)?,
         Action::Edit => edit(args)?,
@@ -113,6 +114,20 @@ fn alias(args: Args) -> Result<()> {
     save_config(&conf)
 }
 
+fn configure(args: Args) -> Result<()> {
+    let mut conf = load_config()?;
+
+    for (k, v) in args.vars {
+        if k.starts_with('-') {
+            conf.vars.remove(&k[1..]);
+        } else {
+            conf.vars.insert(k.into_owned().into(), v.into_owned().into());
+        }
+    }
+
+    save_config(&conf)
+}
+
 /// Loads template with the name `src` to the directory `dest`. `vars` can
 /// add/override variables in the template config file.
 fn load(mut args: Args) -> Result<()> {
@@ -148,7 +163,12 @@ fn load(mut args: Args) -> Result<()> {
         return Ok(());
     }
 
-    load_template(template, dest, args.vars)
+    let mut vars = args.vars;
+    for (k, v) in conf.vars {
+        vars.entry(k).or_insert(v);
+    }
+
+    load_template(template, dest, vars)
 }
 
 /// Deletes template with the name `name`

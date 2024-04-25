@@ -49,6 +49,7 @@ pub enum Action {
     Version,
     Create,
     Alias,
+    Config,
     Load,
     Remove,
     List,
@@ -87,6 +88,7 @@ impl<'a> Args<'a> {
                 "--version" => res.set_action(Action::Version)?,
                 "-c" | "--create" => res.set_action(Action::Create)?,
                 "-a" | "--alias" => res.set_alias(args.next_arg()?)?,
+                "-C" | "--config" | "--configure" => res.set_action(Action::Config)?,
                 "-t" | "--template" => res.set_template(args.next_arg()?)?,
                 "-d" | "--directory" => res.set_path(args.next_arg()?)?,
                 "-cf" | "--create-from" => res.set_action_template_path(
@@ -161,6 +163,10 @@ impl<'a> Args<'a> {
                 self.unused_vars();
             }
             Action::Alias => {
+                self.unused_directory();
+            }
+            Action::Config => {
+                self.unused_template();
                 self.unused_directory();
             }
             Action::Load => {}
