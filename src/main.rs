@@ -120,6 +120,8 @@ fn configure(args: Args) -> Result<()> {
     for (k, v) in args.vars {
         if k.starts_with('-') {
             conf.vars.remove(&k[1..]);
+        } else if k.starts_with('+') {
+            conf.vars.insert(k[1..].to_owned().into(), v.into_owned().into());
         } else {
             conf.vars.insert(k.into_owned().into(), v.into_owned().into());
         }
@@ -329,7 +331,8 @@ Version {}
 
 {'g}Usage:
   {'c}makemake {'w}<template name> {'gr}[options]{'_}
-    Behaves according to the options, by default loads template.
+    Behaves according to the options, by default loads template. Aliases
+    have priority over templates.
 
   {'c}makemake {'gr}[options]{'_}
     Bahaves according to the options, with no options shows this help.
@@ -342,10 +345,10 @@ Version {}
     Creates new template.
 
   {'y}-r  --remove{'_}
-    Removes the template.
+    Removes the template or alias. Aliases have priority over templates.
 
   {'y}-l  --list{'_}
-    Lists all the template names.
+    Lists all the template names and aliases.
 
   {'y}-D{'w}<variable name>{'gr}[=value]{'_}
     Defines/redefines a variable.
@@ -353,6 +356,17 @@ Version {}
   {'y}-e  --edit {'w}<template name>{'_}
     Loads template source to this directory. If the directory is destination
     directory and it doesn't exist, it will be created.
+
+  {'y}-a  --alias {'w}<alias name>{'_}
+    Creates alias for the given template. All wariables set with {'y}-D{'_}
+    will be automatically set when using the alias. You cannot create alias
+    for alias.
+
+  {'y}-C  --config  --configure{'_}
+    Adds all the variables to the global configuration. If the variable name
+    is preceded with '-', it is removed from the global configuration. If the
+    variable name starts with '+', it will be added to the global
+    configuration.
 
   {'y}-p  --prompt {'w}<yes | no | ask>{'_}
     Sets the default answer when prompting. 'yes' will always answer with 'y',
