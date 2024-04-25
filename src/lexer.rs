@@ -14,6 +14,7 @@ pub enum Token {
     NullCheck,
     Ident(String),
     Literal(String),
+    Pound,
 }
 
 impl Display for Token {
@@ -28,6 +29,7 @@ impl Display for Token {
             Self::NullCheck => f.write_str("??"),
             Self::Ident(i) => f.write_str(i),
             Self::Literal(l) => f.write_str(l),
+            Self::Pound => f.write_char('#'),
         }
     }
 }

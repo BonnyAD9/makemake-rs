@@ -10,6 +10,7 @@ pub enum Expr {
     Equals(Equals),
     Condition(Condition),
     NullCheck(NullCheck),
+    Call(Call),
 }
 
 pub struct Variable(String);
@@ -26,6 +27,11 @@ pub struct Condition {
 pub struct NullCheck {
     cond: Box<Expr>,
     other: Box<Expr>,
+}
+
+pub struct Call {
+    typ: Variable,
+    file: Box<Expr>,
 }
 
 impl Expr {
@@ -45,6 +51,7 @@ impl Expr {
             Self::Equals(e) => e.eval(res, vars),
             Self::Condition(c) => c.eval(res, vars),
             Self::NullCheck(n) => n.eval(res, vars),
+            Self::Call(c) => c.eval(res, vars),
         }
     }
 
@@ -228,5 +235,42 @@ impl NullCheck {
         } else {
             self.other.eval(res, vars)
         }
+    }
+}
+
+impl Call {
+    pub fn new(typ: Variable, file: Expr) -> Self {
+        Self {
+            typ,
+            file: Box::new(file),
+        }
+    }
+
+    pub fn eval<'a, W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
+        match self.typ.0.as_str() {
+            "ignore" => self.ignore(),
+            "copy" => self.include(res),
+            "make" => self.make(res, vars),
+        }
+    }
+
+    pub fn ignore(self) -> Result<bool> {
+        todo!()
+    }
+
+    pub fn copy<'a, W>(self, res: &mut W) -> Result<bool> where W: Write {
+        todo!()
+    }
+
+    pub fn make<'a, W>(self, res: &mut W,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,) -> Result<bool> where W: Write {
+        todo!()
     }
 }
