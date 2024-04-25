@@ -10,3 +10,5 @@ printf 'equals:      '
 ./equals/test.sh
 printf 'null check:  '
 ./null-check/test.sh
+printf 'call:        '
+./call/test.sh

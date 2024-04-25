@@ -1,7 +1,7 @@
 use result::OptionResultExt;
 
 use crate::{
-    ast::{Condition, Equals, Expr, Literal, NullCheck, Variable},
+    ast::{Call, Condition, Equals, Expr, Literal, NullCheck, Variable},
     err::{Error, Result},
     lexer::{Lexer, Token},
 };
@@ -52,6 +52,7 @@ where
                 Token::Question => return self.condition(res),
                 Token::NullCheck => return self.null_check(res),
                 Token::OpenParen => res.concat(self.paren()?),
+                Token::Pound => res.concat(self.call()?),
                 Token::Equals => res = self.equals(res)?,
                 Token::Ident(i) => res.concat(Variable::new(i).into()),
                 Token::Literal(l) => res.concat(Literal::new(l).into()),
@@ -120,6 +121,30 @@ where
         let other = self.expr()?;
 
         Ok(NullCheck::new(cond, other).into())
+    }
+
+    fn call(&mut self) -> Result<Expr> {
+        self.get_tok()?;
+
+        let Some(Token::Ident(ident)) = self.cur.take() else {
+            return Err(Error::ParserExpected("identifier afte '#'"));
+        };
+
+        self.get_tok()?;
+        if !matches!(self.cur, Some(Token::OpenParen)) {
+            return Err(Error::ParserExpected("'('"));
+        }
+        self.next_tok()?;
+
+        let file = self.expr()?;
+
+        self.get_tok()?;
+        if !matches!(self.cur, Some(Token::CloseParen)) {
+            return Err(Error::ParserExpected("')'"));
+        }
+        self.next_tok()?;
+
+        Ok(Call::new(Variable::new(ident), file).into())
     }
 
     fn next_tok(&mut self) -> Result<()> {

@@ -1,6 +1,12 @@
-use std::{borrow::Cow, collections::HashMap, fmt::Write, mem};
+use std::{borrow::Cow, fmt::Write, fs::File, io::BufReader, mem};
 
-use crate::{err::Result, writer::FakeWriter};
+use utf8_chars::BufReadCharsExt;
+
+use crate::{
+    err::{Error, Result},
+    maker::{expand, ExpandContext},
+    writer::FakeWriter,
+};
 
 pub enum Expr {
     None,
@@ -35,23 +41,19 @@ pub struct Call {
 }
 
 impl Expr {
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
         match self {
             Self::None => Ok(false),
-            Self::Variable(v) => v.eval(res, vars),
+            Self::Variable(v) => v.eval(res, ctx),
             Self::Literal(l) => l.eval(res),
-            Self::Concat(c) => c.eval(res, vars),
-            Self::Equals(e) => e.eval(res, vars),
-            Self::Condition(c) => c.eval(res, vars),
-            Self::NullCheck(n) => n.eval(res, vars),
-            Self::Call(c) => c.eval(res, vars),
+            Self::Concat(c) => c.eval(res, ctx),
+            Self::Equals(e) => e.eval(res, ctx),
+            Self::Condition(c) => c.eval(res, ctx),
+            Self::NullCheck(n) => n.eval(res, ctx),
+            Self::Call(c) => c.eval(res, ctx),
         }
     }
 
@@ -103,20 +105,22 @@ impl From<NullCheck> for Expr {
     }
 }
 
+impl From<Call> for Expr {
+    fn from(value: Call) -> Self {
+        Self::Call(value)
+    }
+}
+
 impl Variable {
     pub fn new(name: String) -> Self {
         Self(name)
     }
 
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
-        if let Some(v) = vars.get(&Cow::Owned(self.0)) {
+        if let Some(v) = ctx.vars.get(&Cow::Owned(self.0)) {
             res.write_str(v)?;
             Ok(true)
         } else {
@@ -144,17 +148,13 @@ impl Concat {
         Self(exprs)
     }
 
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
         self.0
             .into_iter()
-            .map(|e| e.eval(res, vars))
+            .map(|e| e.eval(res, ctx))
             .try_fold(false, |a, b| Ok(a | b?))
     }
 }
@@ -164,18 +164,14 @@ impl Equals {
         Self(Box::new(l), Box::new(r))
     }
 
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
         let mut l = String::new();
         let mut r = String::new();
-        let lres = self.0.eval(&mut l, vars)?;
-        let rres = self.1.eval(&mut r, vars)?;
+        let lres = self.0.eval(&mut l, ctx)?;
+        let rres = self.1.eval(&mut r, ctx)?;
 
         if lres == rres && l == r {
             res.write_str(&l)?;
@@ -195,19 +191,15 @@ impl Condition {
         }
     }
 
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
         let mut w = FakeWriter;
-        if self.cond.eval(&mut w, vars)? {
-            self.success.eval(res, vars)
+        if self.cond.eval(&mut w, ctx)? {
+            self.success.eval(res, ctx)
         } else {
-            self.failure.eval(res, vars)
+            self.failure.eval(res, ctx)
         }
     }
 }
@@ -220,20 +212,16 @@ impl NullCheck {
         }
     }
 
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
         let mut w = String::new();
-        if self.cond.eval(&mut w, vars)? {
+        if self.cond.eval(&mut w, ctx)? {
             res.write_str(&w)?;
             Ok(true)
         } else {
-            self.other.eval(res, vars)
+            self.other.eval(res, ctx)
         }
     }
 }
@@ -246,31 +234,58 @@ impl Call {
         }
     }
 
-    pub fn eval<'a, W>(
-        self,
-        res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    ) -> Result<bool>
+    pub fn eval<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
     where
         W: Write,
     {
         match self.typ.0.as_str() {
-            "ignore" => self.ignore(),
-            "copy" => self.include(res),
-            "make" => self.make(res, vars),
+            "exists" => self.exists(ctx),
+            "include" => self.include(res, ctx),
+            "make" => self.make(res, ctx),
+            a => Err(Error::Msg(format!("Unknown function '{a}'").into())),
         }
     }
 
-    pub fn ignore(self) -> Result<bool> {
-        todo!()
+    pub fn exists(self, ctx: ExpandContext) -> Result<bool> {
+        let mut file = String::new();
+        self.file.eval(&mut file, ctx)?;
+        let file = ctx.template_dir.join(file);
+        Ok(file.exists())
     }
 
-    pub fn copy<'a, W>(self, res: &mut W) -> Result<bool> where W: Write {
-        todo!()
+    pub fn include<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
+    where
+        W: Write,
+    {
+        let mut file = String::new();
+        self.file.eval(&mut file, ctx)?;
+        let file = ctx.template_dir.join(file);
+        if !file.exists() {
+            return Ok(false);
+        }
+
+        let mut file = BufReader::new(File::open(file)?);
+        for c in file.chars() {
+            res.write_char(c?)?;
+        }
+
+        Ok(true)
     }
 
-    pub fn make<'a, W>(self, res: &mut W,
-        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,) -> Result<bool> where W: Write {
-        todo!()
+    pub fn make<W>(self, res: &mut W, ctx: ExpandContext) -> Result<bool>
+    where
+        W: Write,
+    {
+        let mut file = String::new();
+        self.file.eval(&mut file, ctx)?;
+        let file = ctx.template_dir.join(file);
+        if !file.exists() {
+            return Ok(false);
+        }
+
+        let mut file = BufReader::new(File::open(file)?);
+        expand(ctx, &mut file.chars().map(|a| Ok(a?)), res)?;
+
+        Ok(true)
     }
 }

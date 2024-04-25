@@ -28,6 +28,8 @@ struct MakeConfig<'a> {
     files: HashMap<PathBuf, MakeInfo>,
     #[serde(default)]
     vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
+    #[serde(skip)]
+    template_path: PathBuf,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -54,6 +56,12 @@ struct FileInfo {
     name: String,
 }
 
+#[derive(Copy, Clone)]
+pub struct ExpandContext<'a> {
+    pub vars: &'a HashMap<Cow<'a, str>, Cow<'a, str>>,
+    pub template_dir: &'a Path,
+}
+
 pub fn create_template<P1, P2>(src: P1, out: P2) -> Result<()>
 where
     P1: AsRef<Path>,
@@ -78,13 +86,14 @@ where
     if conf.try_exists()? {
         let conf = File::open(conf)?;
         let mut conf: MakeConfig = serde_json::from_reader(conf)?;
+        conf.template_path = src.to_owned();
 
         create_dir_all(dst)?;
         conf.init(vars, dst)?;
 
         let run_cmd = |c: &String| {
             let mut cmd = String::new();
-            expand(&conf.vars, &mut c.chars().map(Ok), &mut cmd)?;
+            expand(conf.context(), &mut c.chars().map(Ok), &mut cmd)?;
             run_command(&cmd, src, dst, &conf.vars)
         };
 
@@ -156,13 +165,27 @@ impl<'a> MakeConfig<'a> {
         Ok(())
     }
 
+    fn context(&self) -> ExpandContext<'_> {
+        ExpandContext {
+            vars: &self.vars,
+            template_dir: &self.template_path,
+        }
+    }
+
     fn expand_variables(
         &mut self,
         vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
     ) -> Result<()> {
         for v in self.vars.values_mut() {
             let mut res = String::new();
-            expand(vars, &mut v.chars().map(Ok), &mut res)?;
+            expand(
+                ExpandContext {
+                    vars,
+                    template_dir: &self.template_path,
+                },
+                &mut v.chars().map(Ok),
+                &mut res,
+            )?;
             *v = res.into();
         }
 
@@ -311,7 +334,7 @@ impl<'a> MakeConfig<'a> {
         I: Iterator<Item = Result<char>>,
         W: Write,
     {
-        expand(&self.vars, src, dst)
+        expand(self.context(), src, dst)
     }
 
     fn make_name(
@@ -334,11 +357,7 @@ impl<'a> MakeConfig<'a> {
     }
 }
 
-fn expand<'a, I, W>(
-    vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
-    src: &mut I,
-    dst: &mut W,
-) -> Result<()>
+pub fn expand<I, W>(ctx: ExpandContext, src: &mut I, dst: &mut W) -> Result<()>
 where
     I: Iterator<Item = Result<char>>,
     W: Write,
@@ -356,7 +375,7 @@ where
                 continue;
             }
 
-            parse(src)?.eval(dst, vars)?;
+            parse(src)?.eval(dst, ctx)?;
         }
     }
 

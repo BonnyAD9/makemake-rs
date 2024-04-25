@@ -88,16 +88,16 @@ fn alias(args: Args) -> Result<()> {
     let alias_name = args.get_alias()?;
     let mut conf = load_config()?;
 
-    if conf.aliases.contains_key(alias_name) {
-        if !prompt_yn(
+    if conf.aliases.contains_key(alias_name)
+        && !prompt_yn(
             &format!(
                 "Alias with the name '{alias_name}' already exists.\n\
                 Do you want to overwire it? [y/N]: "
             ),
             args.prompt_answer,
-        )? {
-            return Ok(());
-        }
+        )?
+    {
+        return Ok(());
     }
 
     let alias = Alias {
@@ -118,12 +118,13 @@ fn configure(args: Args) -> Result<()> {
     let mut conf = load_config()?;
 
     for (k, v) in args.vars {
-        if k.starts_with('-') {
-            conf.vars.remove(&k[1..]);
-        } else if k.starts_with('+') {
-            conf.vars.insert(k[1..].to_owned().into(), v.into_owned().into());
+        if let Some(k) = k.strip_prefix('-') {
+            conf.vars.remove(k);
+        } else if let Some(k) = k.strip_prefix('+') {
+            conf.vars.insert(k.to_owned().into(), v.into_owned().into());
         } else {
-            conf.vars.insert(k.into_owned().into(), v.into_owned().into());
+            conf.vars
+                .insert(k.into_owned().into(), v.into_owned().into());
         }
     }
 
@@ -139,7 +140,7 @@ fn load(mut args: Args) -> Result<()> {
     if let Some(a) = conf.aliases.get(name) {
         name = &a.template;
         for (k, v) in &a.vars {
-            args.vars.entry(k.to_owned()).or_insert(v.to_owned());
+            args.vars.entry(k.clone()).or_insert(v.clone());
         }
     }
 
@@ -176,7 +177,7 @@ fn load(mut args: Args) -> Result<()> {
 /// Deletes template with the name `name`
 fn remove(args: Args) -> Result<()> {
     let mut conf = load_config()?;
-    if let Some(_) = conf.aliases.remove(args.get_template()?) {
+    if conf.aliases.remove(args.get_template()?).is_some() {
         save_config(&conf)
     } else {
         remove_dir_all(get_template_dir(args.get_template()?)?)?;

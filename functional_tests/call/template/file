@@ -1,0 +1,4 @@
+${#include('file2')}
+${#make('file2')}
+${#exists('file2') ? 'yes' : 'no'}
+${#exists('file3') ? 'yes' : 'no'}

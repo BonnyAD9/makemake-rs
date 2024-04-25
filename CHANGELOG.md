@@ -4,6 +4,7 @@
 - Add aliases
 - Add global configuration
 - Add the null check operator
+- Add functions (`#include`, `#make`, `#exists`)
 
 ## v2.1.0
 ### New features

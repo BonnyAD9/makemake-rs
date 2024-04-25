@@ -29,5 +29,5 @@ pub enum Error {
     #[error(transparent)]
     StripPrefix(#[from] StripPrefixError),
     #[error(transparent)]
-    ShellParseError(#[from] shell_words::ParseError),
+    ShellParse(#[from] shell_words::ParseError),
 }
