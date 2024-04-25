@@ -2,7 +2,12 @@ use std::{borrow::Cow, collections::HashMap, path::Path, process::Command};
 
 use crate::err::{Error, Result};
 
-pub fn run_command<P1, P2>(cmd: &str, cwd: P1, pwd: P2, vars: &HashMap<Cow<str>, Cow<str>>) -> Result<()>
+pub fn run_command<P1, P2>(
+    cmd: &str,
+    cwd: P1,
+    pwd: P2,
+    vars: &HashMap<Cow<str>, Cow<str>>,
+) -> Result<()>
 where
     P1: AsRef<Path>,
     P2: AsRef<Path>,

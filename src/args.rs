@@ -20,6 +20,8 @@ pub enum ArgError {
     TooManyActions,
     #[error("Missing template name for the given action.")]
     MissingTemplate,
+    #[error("Missing alias name for the given action.")]
+    MissingAlias,
 }
 
 impl<'a> From<pareg::ArgError<'a>> for ArgError {
@@ -46,6 +48,7 @@ pub enum Action {
     Help,
     Version,
     Create,
+    Alias,
     Load,
     Remove,
     List,
@@ -55,6 +58,7 @@ pub enum Action {
 pub struct Args<'a> {
     pub use_color: Yna,
     pub template: Option<&'a str>,
+    pub alias: Option<&'a str>,
     pub directory: Option<&'a str>,
     pub action: Option<Action>,
     pub vars: HashMap<Cow<'a, str>, Cow<'a, str>>,
@@ -65,11 +69,12 @@ impl<'a> Args<'a> {
     pub fn parse<I>(mut args: ArgIterator<'a, I>) -> ArgResult<Self>
     where
         I: Iterator,
-        I::Item: ByRef<&'a str>
+        I::Item: ByRef<&'a str>,
     {
         let mut res = Self {
             use_color: Yna::Auto,
             template: None,
+            alias: None,
             directory: None,
             action: None,
             vars: HashMap::new(),
@@ -81,21 +86,17 @@ impl<'a> Args<'a> {
                 "-h" | "--help" | "-?" => res.set_action(Action::Help)?,
                 "--version" => res.set_action(Action::Version)?,
                 "-c" | "--create" => res.set_action(Action::Create)?,
-                "-t" | "--template" => {
-                    res.set_template(args.next_arg()?)?
-                }
-                "-d" | "--directory" => {
-                    res.set_path(args.next_arg()?)?
-                }
+                "-a" | "--alias" => res.set_alias(args.next_arg()?)?,
+                "-t" | "--template" => res.set_template(args.next_arg()?)?,
+                "-d" | "--directory" => res.set_path(args.next_arg()?)?,
                 "-cf" | "--create-from" => res.set_action_template_path(
                     Action::Create,
                     args.next_arg()?,
                     args.next_arg()?,
                 )?,
-                "--load" => res.set_action_template(
-                    Action::Load,
-                    args.next_arg()?,
-                )?,
+                "--load" => {
+                    res.set_action_template(Action::Load, args.next_arg()?)?
+                }
                 "-lt" | "--load-to" => res.set_action_template_path(
                     Action::Load,
                     args.next_arg()?,
@@ -159,6 +160,9 @@ impl<'a> Args<'a> {
             Action::Create => {
                 self.unused_vars();
             }
+            Action::Alias => {
+                self.unused_directory();
+            }
             Action::Load => {}
             Action::Remove => {
                 self.unused_directory();
@@ -214,6 +218,10 @@ impl<'a> Args<'a> {
         self.template.ok_or(ArgError::MissingTemplate)
     }
 
+    pub fn get_alias(&self) -> ArgResult<&'a str> {
+        self.alias.ok_or(ArgError::MissingAlias)
+    }
+
     pub fn get_action(&self) -> Action {
         if self.action.is_none() && self.template.is_none() {
             Action::Help
@@ -267,5 +275,11 @@ impl<'a> Args<'a> {
         self.set_action(action)?;
         self.set_template(template)?;
         self.set_path(path)
+    }
+
+    fn set_alias(&mut self, alias: &'a str) -> ArgResult<()> {
+        self.set_action(Action::Alias)?;
+        self.alias = Some(alias);
+        Ok(())
     }
 } // impl Args<'a>

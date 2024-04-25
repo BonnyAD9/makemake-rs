@@ -88,17 +88,11 @@ where
             run_command(&cmd, src, dst, &conf.vars)
         };
 
-        conf.pre_command
-            .as_ref()
-            .map(run_cmd)
-            .unwrap_or(Ok(()))?;
+        conf.pre_command.as_ref().map(run_cmd).unwrap_or(Ok(()))?;
 
         conf.make_dir(src, dst)?;
 
-        conf.post_command
-            .as_ref()
-            .map(run_cmd)
-            .unwrap_or(Ok(()))?;
+        conf.post_command.as_ref().map(run_cmd).unwrap_or(Ok(()))?;
         Ok(())
     } else {
         copy_dir(src, dst)

@@ -1,4 +1,5 @@
 use args::{Action, Args, Yna};
+use config::Config;
 use dirs::config_dir;
 use err::Result;
 use maker::{copy_dir, create_template, load_template};
@@ -12,11 +13,12 @@ use std::{
 };
 use termal::{eprintmcln, printmcln};
 
-use crate::err::Error;
+use crate::{config::Alias, err::Error};
 
 mod args;
 mod ast;
 mod commander;
+mod config;
 mod err;
 mod lexer;
 mod maker;
@@ -42,6 +44,7 @@ fn start() -> Result<()> {
     // Do what the arguments specify
     match args.get_action() {
         Action::Create => create(args)?,
+        Action::Alias => alias(args)?,
         Action::Load => load(args)?,
         Action::Remove => remove(args)?,
         Action::Edit => edit(args)?,
@@ -65,7 +68,7 @@ fn create(args: Args) -> Result<()> {
         if !prompt_yn(
             &format!(
                 "Template with the name '{name}' already \
-            exists.\nDo you want to overwrite it? [y/N]: "
+                exists.\nDo you want to overwrite it? [y/N]: "
             ),
             args.prompt_answer,
         )? {
@@ -77,10 +80,52 @@ fn create(args: Args) -> Result<()> {
     create_template(src, tdir)
 }
 
+/// Creates new template with the name `name` from the directory `src` in the
+/// default template folder.
+fn alias(args: Args) -> Result<()> {
+    let template = args.get_template()?;
+    let alias_name = args.get_alias()?;
+    let mut conf = load_config()?;
+
+    if conf.aliases.contains_key(alias_name) {
+        if !prompt_yn(
+            &format!(
+                "Alias with the name '{alias_name}' already exists.\n\
+                Do you want to overwire it? [y/N]: "
+            ),
+            args.prompt_answer,
+        )? {
+            return Ok(());
+        }
+    }
+
+    let alias = Alias {
+        template: template.to_owned(),
+        vars: args
+            .vars
+            .into_iter()
+            .map(|(k, v)| (k.into_owned().into(), v.into_owned().into()))
+            .collect(),
+    };
+
+    conf.aliases.insert(alias_name.to_owned(), alias);
+
+    save_config(&conf)
+}
+
 /// Loads template with the name `src` to the directory `dest`. `vars` can
 /// add/override variables in the template config file.
-fn load(args: Args) -> Result<()> {
-    let name = args.get_template()?;
+fn load(mut args: Args) -> Result<()> {
+    let mut name = args.get_template()?;
+    let conf = load_config()?;
+
+    if let Some(a) = conf.aliases.get(name) {
+        name = &a.template;
+        for (k, v) in &a.vars {
+            args.vars.entry(k.to_owned()).or_insert(v.to_owned());
+        }
+    }
+
     let dest = args.get_directory();
 
     let template = get_template_dir(name)?;
@@ -108,8 +153,13 @@ fn load(args: Args) -> Result<()> {
 
 /// Deletes template with the name `name`
 fn remove(args: Args) -> Result<()> {
-    remove_dir_all(get_template_dir(args.get_template()?)?)?;
-    Ok(())
+    let mut conf = load_config()?;
+    if let Some(_) = conf.aliases.remove(args.get_template()?) {
+        save_config(&conf)
+    } else {
+        remove_dir_all(get_template_dir(args.get_template()?)?)?;
+        Ok(())
+    }
 }
 
 /// Copies the template with the name `name` to the directory `dest`.
@@ -119,6 +169,17 @@ fn edit(args: Args) -> Result<()> {
 
     let template = get_template_dir(name)?;
     if !template.exists() {
+        let conf = load_config()?;
+        if let Some(n) = conf.aliases.get(name) {
+            return Err(Error::Msg(
+                format!(
+                    "{name} is not a template, it is alias for the template \
+                    {}",
+                    n.template
+                )
+                .into(),
+            ));
+        }
         return Err(Error::Msg(
             format!("There is no existing template '{name}'").into(),
         ));
@@ -142,6 +203,19 @@ fn edit(args: Args) -> Result<()> {
 fn list() -> Result<()> {
     for f in read_dir(get_template_dir("")?)? {
         println!("{}", f?.file_name().to_string_lossy());
+    }
+
+    let conf = load_config()?;
+    for (n, a) in conf.aliases {
+        print!("{n} : {}", a.template);
+        for (n, v) in a.vars {
+            if v.is_empty() {
+                print!(" -D{n}",);
+            } else {
+                print!(" -D{n}={v}");
+            }
+        }
+        println!();
     }
     Ok(())
 }
@@ -176,6 +250,24 @@ fn get_template_dir(name: &str) -> Result<PathBuf> {
     config.push("makemake/templates");
     config.push(name);
     Ok(config)
+}
+
+fn load_config() -> Result<Config> {
+    let mut config =
+        config_dir().ok_or(Error::Msg("Can't get config directory".into()))?;
+    config.push("config.json");
+    if config.try_exists()? {
+        Config::from_file(config)
+    } else {
+        Ok(Config::default())
+    }
+}
+
+fn save_config(conf: &Config) -> Result<()> {
+    let mut config =
+        config_dir().ok_or(Error::Msg("Can't get config directory".into()))?;
+    config.push("config.json");
+    conf.to_file(config)
 }
 
 fn version(args: Args) {
