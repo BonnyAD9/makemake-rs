@@ -9,6 +9,7 @@ pub enum Expr {
     Concat(Concat),
     Equals(Equals),
     Condition(Condition),
+    NullCheck(NullCheck),
 }
 
 pub struct Variable(String);
@@ -20,6 +21,11 @@ pub struct Condition {
     cond: Box<Expr>,
     success: Box<Expr>,
     failure: Box<Expr>,
+}
+
+pub struct NullCheck {
+    cond: Box<Expr>,
+    other: Box<Expr>,
 }
 
 impl Expr {
@@ -38,6 +44,7 @@ impl Expr {
             Self::Concat(c) => c.eval(res, vars),
             Self::Equals(e) => e.eval(res, vars),
             Self::Condition(c) => c.eval(res, vars),
+            Self::NullCheck(n) => n.eval(res, vars),
         }
     }
 
@@ -80,6 +87,12 @@ impl From<Equals> for Expr {
 impl From<Condition> for Expr {
     fn from(value: Condition) -> Self {
         Self::Condition(value)
+    }
+}
+
+impl From<NullCheck> for Expr {
+    fn from(value: NullCheck) -> Self {
+        Self::NullCheck(value)
     }
 }
 
@@ -135,7 +148,7 @@ impl Concat {
         self.0
             .into_iter()
             .map(|e| e.eval(res, vars))
-            .try_fold(true, |a, b| Ok(a | b?))
+            .try_fold(false, |a, b| Ok(a | b?))
     }
 }
 
@@ -188,6 +201,32 @@ impl Condition {
             self.success.eval(res, vars)
         } else {
             self.failure.eval(res, vars)
+        }
+    }
+}
+
+impl NullCheck {
+    pub fn new(cond: Expr, other: Expr) -> Self {
+        Self {
+            cond: Box::new(cond),
+            other: Box::new(other),
+        }
+    }
+
+    pub fn eval<'a, W>(
+        self,
+        res: &mut W,
+        vars: &HashMap<Cow<'a, str>, Cow<'a, str>>,
+    ) -> Result<bool>
+    where
+        W: Write,
+    {
+        let mut w = String::new();
+        if self.cond.eval(&mut w, vars)? {
+            res.write_str(&w)?;
+            Ok(true)
+        } else {
+            self.other.eval(res, vars)
         }
     }
 }

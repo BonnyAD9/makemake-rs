@@ -11,6 +11,7 @@ pub enum Token {
     OpenParen,
     CloseParen,
     Equals,
+    NullCheck,
     Ident(String),
     Literal(String),
 }
@@ -24,6 +25,7 @@ impl Display for Token {
             Self::OpenParen => f.write_char('('),
             Self::CloseParen => f.write_char(')'),
             Self::Equals => f.write_str("=="),
+            Self::NullCheck => f.write_str("??"),
             Self::Ident(i) => f.write_str(i),
             Self::Literal(l) => f.write_str(l),
         }
@@ -83,8 +85,13 @@ where
                 Ok(Some(Token::CloseBracket))
             }
             Some('?') => {
-                self.cur = None;
-                Ok(Some(Token::Question))
+                self.next_chr()?;
+                if matches!(self.cur, Some('?')) {
+                    self.cur = None;
+                    Ok(Some(Token::NullCheck))
+                } else {
+                    Ok(Some(Token::Question))
+                }
             }
             Some(':') => {
                 self.cur = None;

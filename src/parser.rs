@@ -1,7 +1,7 @@
 use result::OptionResultExt;
 
 use crate::{
-    ast::{Condition, Equals, Expr, Literal, Variable},
+    ast::{Condition, Equals, Expr, Literal, NullCheck, Variable},
     err::{Error, Result},
     lexer::{Lexer, Token},
 };
@@ -50,6 +50,7 @@ where
         while let Some(t) = self.cur.take() {
             match t {
                 Token::Question => return self.condition(res),
+                Token::NullCheck => return self.null_check(res),
                 Token::OpenParen => res.concat(self.paren()?),
                 Token::Equals => res = self.equals(res)?,
                 Token::Ident(i) => res.concat(Variable::new(i).into()),
@@ -113,6 +114,12 @@ where
         let failure = self.expr()?;
 
         Ok(Condition::new(cond, success, failure).into())
+    }
+
+    fn null_check(&mut self, cond: Expr) -> Result<Expr> {
+        let other = self.expr()?;
+
+        Ok(NullCheck::new(cond, other).into())
     }
 
     fn next_tok(&mut self) -> Result<()> {

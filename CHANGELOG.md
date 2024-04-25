@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v2.2.0
+- Add aliases
+- Add global configuration
+- Add the null check operator
+
 ## v2.1.0
 ### New features
 - Add builtin variable `_DNAME` that is the name of the directory in which the

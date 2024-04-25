@@ -8,3 +8,5 @@ printf 'parenthesis: '
 ./parenthesis/test.sh
 printf 'equals:      '
 ./equals/test.sh
+printf 'null check:  '
+./null-check/test.sh

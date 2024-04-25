@@ -1,0 +1,11 @@
+{
+    "$schema": "https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/json-schema/makemake-schema.json",
+    "files": {
+        "makemake.json": "Ignore",
+        "file": "Make"
+    },
+    "vars": {
+        "a": "aa",
+        "b": "bb"
+    }
+}
