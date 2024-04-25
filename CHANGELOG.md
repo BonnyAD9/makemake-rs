@@ -1,9 +1,9 @@
 # CHANGELOG
 
 ## v2.2.0
-- Add aliases
-- Add global configuration
-- Add the null check operator
+- Add aliases (`-a`)
+- Add global configuration (`-C`)
+- Add null check operator (`??`)
 - Add functions (`#include`, `#make`, `#exists`)
 
 ## v2.1.0
