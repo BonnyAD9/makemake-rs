@@ -1,6 +1,12 @@
-Hello ${name}!
+Hello ${name ?? 'makemake'}!
 
 Hello functions!
+
+Hello parameters!
+
+Hello makemake!
+
+Hello !
 
 yes
 no

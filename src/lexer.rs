@@ -15,7 +15,9 @@ pub enum Token {
     Ident(String),
     Literal(String),
     Pound,
-    //Comma,
+    Comma,
+    Assign,
+    Minus,
 }
 
 impl Display for Token {
@@ -31,7 +33,9 @@ impl Display for Token {
             Self::Ident(i) => f.write_str(i),
             Self::Literal(l) => f.write_str(l),
             Self::Pound => f.write_char('#'),
-            //Self::Comma => f.write_char(','),
+            Self::Comma => f.write_char(','),
+            Self::Assign => f.write_char('='),
+            Self::Minus => f.write_char('-'),
         }
     }
 }
@@ -111,21 +115,25 @@ where
             }
             Some('=') => {
                 self.next_chr()?;
-                if !matches!(self.cur, Some('=')) {
-                    Err(Error::LexerExpect("'='"))
-                } else {
+                if matches!(self.cur, Some('=')) {
                     self.cur = None;
                     Ok(Some(Token::Equals))
+                } else {
+                    Ok(Some(Token::Assign))
                 }
             }
             Some('#') => {
                 self.cur = None;
                 Ok(Some(Token::Pound))
             }
-            /*Some(',') => {
+            Some(',') => {
                 self.cur = None;
                 Ok(Some(Token::Comma))
-            }*/
+            }
+            Some('-') => {
+                self.cur = None;
+                Ok(Some(Token::Minus))
+            }
             Some('\'') => self.read_literal(),
             Some(a) if a.is_alphabetic() || a == '_' => self.read_ident(),
             None => Ok(None),

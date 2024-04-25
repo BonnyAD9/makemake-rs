@@ -1,4 +1,7 @@
 ${#include('file2')}
 ${#make('file2')}
+${#make('file2', name='parameters')}
+${#make('file2', -name,)}
+${#make('file2', name)}
 ${#exists('file2') ? 'yes' : 'no'}
 ${#exists('file3') ? 'yes' : 'no'}

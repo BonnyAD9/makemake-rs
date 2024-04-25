@@ -1,4 +1,7 @@
-use std::{borrow::Cow, fmt::Write, fs::File, io::BufReader, mem};
+use std::{
+    borrow::Cow, collections::HashMap, fmt::Write, fs::File, io::BufReader,
+    mem,
+};
 
 use utf8_chars::BufReadCharsExt;
 
@@ -19,6 +22,7 @@ pub enum Expr {
     Call(Call),
 }
 
+#[derive(Hash, PartialEq, Eq)]
 pub struct Variable(String);
 pub struct Literal(String);
 pub struct Concat(Vec<Expr>);
@@ -38,6 +42,8 @@ pub struct NullCheck {
 pub struct Call {
     typ: Variable,
     file: Box<Expr>,
+    define: HashMap<Variable, Expr>,
+    undefine: Vec<Variable>,
 }
 
 impl Expr {
@@ -227,10 +233,17 @@ impl NullCheck {
 }
 
 impl Call {
-    pub fn new(typ: Variable, file: Expr) -> Self {
+    pub fn new(
+        typ: Variable,
+        file: Expr,
+        define: HashMap<Variable, Expr>,
+        undefine: Vec<Variable>,
+    ) -> Self {
         Self {
             typ,
             file: Box::new(file),
+            define,
+            undefine,
         }
     }
 
@@ -247,6 +260,12 @@ impl Call {
     }
 
     pub fn exists(self, ctx: ExpandContext) -> Result<bool> {
+        if !self.define.is_empty() || !self.undefine.is_empty() {
+            return Err(Error::Msg(
+                "Too many arguments to function '#include'".into(),
+            ));
+        }
+
         let mut file = String::new();
         self.file.eval(&mut file, ctx)?;
         let file = ctx.template_dir.join(file);
@@ -257,6 +276,12 @@ impl Call {
     where
         W: Write,
     {
+        if !self.define.is_empty() || !self.undefine.is_empty() {
+            return Err(Error::Msg(
+                "Too many arguments to function '#include'".into(),
+            ));
+        }
+
         let mut file = String::new();
         self.file.eval(&mut file, ctx)?;
         let file = ctx.template_dir.join(file);
@@ -284,7 +309,35 @@ impl Call {
         }
 
         let mut file = BufReader::new(File::open(file)?);
-        expand(ctx, &mut file.chars().map(|a| Ok(a?)), res)?;
+        if self.define.is_empty() && self.undefine.is_empty() {
+            expand(ctx, &mut file.chars().map(|a| Ok(a?)), res)?;
+            return Ok(true);
+        }
+
+        let mut vars: HashMap<Cow<_>, Cow<_>> = ctx
+            .vars
+            .iter()
+            .map(|(k, v)| (k.as_ref().into(), v.as_ref().into()))
+            .collect();
+
+        for k in self.undefine {
+            vars.remove(k.0.as_str());
+        }
+
+        for (k, v) in self.define {
+            let mut value = String::new();
+            v.eval(&mut value, ctx)?;
+            vars.insert(k.0.into(), value.into());
+        }
+
+        expand(
+            ExpandContext {
+                vars: &vars,
+                template_dir: ctx.template_dir,
+            },
+            &mut file.chars().map(|a| Ok(a?)),
+            res,
+        )?;
 
         Ok(true)
     }

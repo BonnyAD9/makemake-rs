@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use result::OptionResultExt;
 
 use crate::{
@@ -127,7 +129,7 @@ where
         self.get_tok()?;
 
         let Some(Token::Ident(ident)) = self.cur.take() else {
-            return Err(Error::ParserExpected("identifier afte '#'"));
+            return Err(Error::ParserExpected("identifier after '#'"));
         };
 
         self.get_tok()?;
@@ -138,13 +140,47 @@ where
 
         let file = self.expr()?;
 
+        let mut define = HashMap::new();
+        let mut undefine = Vec::new();
+
+        while matches!(self.cur, Some(Token::Comma)) {
+            self.next_tok()?;
+            if matches!(self.cur, Some(Token::CloseParen)) {
+                break;
+            }
+
+            let mut undef = false;
+            if matches!(self.cur, Some(Token::Minus)) {
+                undef = true;
+                self.next_tok()?;
+            }
+
+            let Some(Token::Ident(ident)) = self.cur.take() else {
+                return Err(Error::ParserExpected("Identifer in arguments."));
+            };
+
+            let mut value = Expr::None;
+            self.get_tok()?;
+            if matches!(self.cur, Some(Token::Assign)) {
+                self.next_tok()?;
+                value = self.expr()?;
+            }
+            self.get_tok()?;
+
+            if undef {
+                undefine.push(Variable::new(ident));
+            } else {
+                define.insert(Variable::new(ident), value);
+            }
+        }
+
         self.get_tok()?;
         if !matches!(self.cur, Some(Token::CloseParen)) {
             return Err(Error::ParserExpected("')'"));
         }
         self.next_tok()?;
 
-        Ok(Call::new(Variable::new(ident), file).into())
+        Ok(Call::new(Variable::new(ident), file, define, undefine).into())
     }
 
     fn next_tok(&mut self) -> Result<()> {

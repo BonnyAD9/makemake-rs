@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [ "test", "-d", "test/r" ],
+            "args": [ "test", "-d", "tmp", "-Dname=functions", "-py" ],
             "cwd": "${workspaceFolder}"
         },
         {
