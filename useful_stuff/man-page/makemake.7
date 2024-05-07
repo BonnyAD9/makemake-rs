@@ -154,6 +154,10 @@ to defined value of the first of the operands, otherwise it expands to \fB_\fR.
 In order for two operands to be equal they both must be undefined or both
 defined and have the same value at the same time.
 
+.SS COMMENTS
+MakeMake doesn't have support for comments, but you can use conditions to
+simulate them: \fB${'code here' (? 'comment here' :) 'code here'}\fR.
+
 .SS makemake.json
 To configure your template, place file \fBmakemake.json\fR to the root of the
 template directory. The file specifies how the template should be interpreted.

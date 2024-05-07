@@ -1,5 +1,5 @@
 # Makemake
-[![downloads][version-badge]][aur]
+[![version][version-badge]][aur]
 
 ![makemake][icon]
 
