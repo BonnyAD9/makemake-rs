@@ -38,7 +38,7 @@ You can use parenthesis to modify the precedence and asociativity.
 
 .SS FUNCTIONS
 Function calls start with the character \fB#\fR followed by the name of the
-funciton parenthesis and arguments separated by commas. Arguments to the
+funciton and arguments in parenthesis separated by commas. Arguments to the
 function may be one of the following:
 
 .TP
@@ -62,21 +62,21 @@ relative to the template.
 These are the builtin functions:
 
 .TP
-\fB#include(\fR\fIfilename\fR\fB)\fR
-Expands to the contents of the file specified by the \fIfilename\fR, it may be
-any expression. Expands to undefined value if the file doesn't exist.
+\fB#include(\fR\fI<filename>\fR\fB)\fR
+Expands to the contents of the file specified by the expression \fIfilename\fR.
+If the file doesn't exist, expands to undefined value (\fB_\fR).
 
 .TP
-\fB#make(\fR\fIfilename\fR[\fB, \fR\fIvariable definition | undefinition\fR\fB,\fR ...]\fB)\fR
+\fB#make(\fR\fI<filename>\fR[\fB, \fR\fI<variable definition> | <variable undefinition>\fR [\fB,\fR ...]]\fB)\fR
 Expands to the contents of the file specified by the \fIfilename\fR, it may be
 any expression. The contents of the file have variables expanded. The variables
 for the scope of the file may be defined/undefined with the next arguments.
-Expands to undefined value if the file doesn't exist.
+Expands to undefined value (\fB_\fB) if the file doesn't exist.
 
 .TP
 \fB#exists(\fR\fIfilename\fR\fB)\fR
 Expands to defined value if the file exists, otherwise expands to undefined
-value.
+value  (\fB_\fB).
 
 .SS VARIABLES
 Variables in expressions are expanded, the name of variable may contain any
