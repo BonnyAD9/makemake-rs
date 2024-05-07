@@ -5,6 +5,7 @@
 - Add global configuration (`-C`)
 - Add null check operator (`??`)
 - Add functions (`#include`, `#make`, `#exists`)
+- Allow unclosed `${` to avoid final newline.
 
 ## v2.1.0
 ### New features
