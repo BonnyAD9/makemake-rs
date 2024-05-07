@@ -13,10 +13,14 @@ makemake \- template format for makemake
 .SH DESCRIPTION
 This manual page describes the format of templates used in \fBmakemake\fR.
 
-Expressions are enclosed in \fB${\fR and \fB}\fR. They can contain variables,
-literals, parenthesis (\fB(\fR and \fB)\fR), the \fB?:\fR operator and the
-\fB==\fR operator. When there is no operator between two values, the values
-are concatinated.
+Expressions are enclosed in \fB${\fR and \fB}\fR. They can contain builtin
+function calls, variables, literals, parenthesis (\fB(\fR and \fB)\fR), the
+conditional operators \fB?:\fR and \fB??\fR and the \fB==\fR operator. When
+there is no operator between two values, the values are concatinated.
+
+The last expression in the file can optionally leave out the closing \fB}\fR.
+This can be used to avoid newline at the end of the expansion in editors that
+automatically add newline at the end of each file.
 
 This is the precedence table:
 .TS
@@ -26,10 +30,53 @@ L L L L.
 precedence | operator | description   | asociativity
 1          |          | concatination | left to right
 2          | ==       | equals        | left to right
+3          | ??       | null check    | left to right
 3          | ? :      | condition     | left to right
 .TE
 
 You can use parenthesis to modify the precedence and asociativity.
+
+.SS FUNCTIONS
+Function calls start with the character \fB#\fR followed by the name of the
+funciton parenthesis and arguments separated by commas. Arguments to the
+function may be one of the following:
+
+.TP
+.B expression
+Any expression that expands to value.
+
+.TP
+.B variable definition
+You can define or redefine any variable for the context of the function by
+using the syntax \fIvariable\fR \fB=\fR \fIexpression\fR.
+
+.TP
+.B variable undefinition
+You can undefine variables for the context of the function by using the syntax
+\fI-\fR\fBvariable\fR.
+
+.SS BUILTIN FUNCTIONS
+Filename in the functions that take it as argument is absolute path or path
+relative to the template.
+
+These are the builtin functions:
+
+.TP
+\fB#include(\fR\fIfilename\fR\fB)\fR
+Expands to the contents of the file specified by the \fIfilename\fR, it may be
+any expression. Expands to undefined value if the file doesn't exist.
+
+.TP
+\fB#make(\fR\fIfilename\fR[\fB, \fR\fIvariable definition | undefinition\fR\fB,\fR ...]\fB)\fR
+Expands to the contents of the file specified by the \fIfilename\fR, it may be
+any expression. The contents of the file have variables expanded. The variables
+for the scope of the file may be defined/undefined with the next arguments.
+Expands to undefined value if the file doesn't exist.
+
+.TP
+\fB#exists(\fR\fIfilename\fR\fB)\fR
+Expands to defined value if the file exists, otherwise expands to undefined
+value.
 
 .SS VARIABLES
 Variables in expressions are expanded, the name of variable may contain any
