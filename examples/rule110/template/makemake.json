@@ -1,0 +1,28 @@
+{
+    "$schema": "https://raw.githubusercontent.com/BonnyAD9/makemake-rs/master/useful_stuff/json-schema/makemake-schema.json",
+    "files": {
+        "makemake.json": "Ignore",
+        "rule.txt": "Ignore",
+        "110.txt": "Make"
+    },
+    "vars": {
+        "I": "",
+        "MAX": "hhhhhhhhhhhhhhhh",
+        "C1": ".",
+        "C2": ".",
+        "C3": ".",
+        "C4": ".",
+        "C5": ".",
+        "C6": ".",
+        "C7": ".",
+        "C8": ".",
+        "C9": ".",
+        "C10": ".",
+        "C11": ".",
+        "C12": ".",
+        "C13": ".",
+        "C14": ".",
+        "C15": ".",
+        "C16": "#"
+    }
+}

@@ -1,0 +1,21 @@
+${? 'Works with 16 wide array' :
+I == MAX ? :
+C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15 C16 '\n'
+#make('110.txt', I=I 'h',
+    C1 = #make('rule.txt', V='.' C1 C2),
+    C2 = #make('rule.txt', V=C1 C2 C3),
+    C3 = #make('rule.txt', V=C2 C3 C4),
+    C4 = #make('rule.txt', V=C3 C4 C5),
+    C5 = #make('rule.txt', V=C4 C5 C6),
+    C6 = #make('rule.txt', V=C5 C6 C7),
+    C7 = #make('rule.txt', V=C6 C7 C8),
+    C8 = #make('rule.txt', V=C7 C8 C9),
+    C9 = #make('rule.txt', V=C8 C9 C10),
+    C10 = #make('rule.txt', V=C9 C10 C11),
+    C11 = #make('rule.txt', V=C10 C11 C12),
+    C12 = #make('rule.txt', V=C11 C12 C13),
+    C13 = #make('rule.txt', V=C12 C13 C14),
+    C14 = #make('rule.txt', V=C13 C14 C15),
+    C15 = #make('rule.txt', V=C14 C15 C16),
+    C16 = #make('rule.txt', V=C15 C16 '.'),
+)
