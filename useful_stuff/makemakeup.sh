@@ -15,7 +15,7 @@ check_exists() {
 check_exists wget
 check_exists cargo
 
-VERSION=2.1.0
+VERSION=2.2.0
 PKG="https://github.com/BonnyAD9/makemake-rs/archive/refs/tags/v$VERSION.tar.gz"
 
 cd /tmp
