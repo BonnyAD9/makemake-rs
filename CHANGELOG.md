@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## v2.2.0
+- MakeMake is now turing complete :)
 - Add aliases (`-a`)
 - Add global configuration (`-C`)
 - Add null check operator (`??`)
