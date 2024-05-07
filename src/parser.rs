@@ -37,10 +37,9 @@ where
         let res = self.expr()?;
 
         self.get_tok()?;
-        if !matches!(self.cur, Some(Token::CloseBracket)) {
-            Err(Error::ParserExpected("'}'"))
-        } else {
-            Ok(res)
+        match self.cur {
+            None | Some(Token::CloseBracket) => Ok(res),
+            _ => Err(Error::ParserExpected("'}'")),
         }
     }
 
