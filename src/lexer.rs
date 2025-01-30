@@ -48,7 +48,7 @@ where
     data: &'a mut I,
 }
 
-impl<'a, I> Iterator for Lexer<'a, I>
+impl<I> Iterator for Lexer<'_, I>
 where
     I: Iterator<Item = Result<char>>,
 {
@@ -71,7 +71,7 @@ where
     }
 }
 
-impl<'a, I> Lexer<'a, I>
+impl<I> Lexer<'_, I>
 where
     I: Iterator<Item = Result<char>>,
 {

@@ -2,8 +2,6 @@ use std::{borrow::Cow, path::StripPrefixError};
 
 use thiserror::Error;
 
-use crate::args::ArgError;
-
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
@@ -19,7 +17,7 @@ pub enum Error {
     #[error("Command {} failed with stderr:\n{}", .cmd, .stderr)]
     CommandUnsuccessful { cmd: String, stderr: String },
     #[error(transparent)]
-    Arg(#[from] ArgError),
+    Arg(#[from] pareg::ArgError),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]

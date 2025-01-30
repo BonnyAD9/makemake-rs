@@ -80,6 +80,11 @@ where
     P2: AsRef<Path>,
 {
     let src = src.as_ref();
+    let dst: Cow<Path> = dst
+        .as_ref()
+        .canonicalize()
+        .map(|p| p.into())
+        .unwrap_or(dst.as_ref().into());
     let dst = dst.as_ref();
     let conf = src.join("makemake.json");
 

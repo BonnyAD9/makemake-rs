@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## future
+### Changes
+- Better error messages when parsing arguments.
+### Fixes
+- Properly resolve parent directory name. (even if directory is `.`)
+
 ## v2.2.0
 - MakeMake is now turing complete :)
 - Add aliases (`-a`)
