@@ -1,7 +1,6 @@
 use std::fmt::{Display, Write};
 
 use crate::err::{Error, Result};
-use result::prelude::*;
 
 #[derive(Debug)]
 pub enum Token {
@@ -55,7 +54,7 @@ where
     type Item = Result<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner_next().invert()
+        self.inner_next().transpose()
     }
 }
 
@@ -198,7 +197,7 @@ where
     }
 
     fn next_chr(&mut self) -> Result<Option<char>> {
-        self.cur = self.data.next().invert()?;
+        self.cur = self.data.next().transpose()?;
         Ok(self.cur)
     }
 }

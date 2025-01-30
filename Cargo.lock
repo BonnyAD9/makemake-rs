@@ -98,7 +98,6 @@ version = "2.2.0"
 dependencies = [
  "dirs",
  "pareg",
- "result",
  "serde",
  "serde_json",
  "shell-words",
@@ -203,12 +202,6 @@ dependencies = [
  "libredox",
  "thiserror 2.0.11",
 ]
-
-[[package]]
-name = "result"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "194d8e591e405d1eecf28819740abed6d719d1a2db87fc0bcdedee9a26d55560"
 
 [[package]]
 name = "ryu"

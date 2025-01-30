@@ -8,7 +8,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use result::OptionResultExt;
 use serde::{Deserialize, Serialize};
 use utf8_chars::BufReadCharsExt;
 
@@ -367,13 +366,13 @@ where
     I: Iterator<Item = Result<char>>,
     W: Write,
 {
-    while let Some(c) = src.next().invert()? {
+    while let Some(c) = src.next().transpose()? {
         if c != '$' {
             dst.write_char(c)?;
             continue;
         }
 
-        if let Some(c) = src.next().invert()? {
+        if let Some(c) = src.next().transpose()? {
             if c != '{' {
                 dst.write_char('$')?;
                 dst.write_char(c)?;

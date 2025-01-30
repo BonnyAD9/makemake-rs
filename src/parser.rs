@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use result::OptionResultExt;
-
 use crate::{
     ast::{Call, Condition, Equals, Expr, Literal, NullCheck, Variable},
     err::{Error, Result},
@@ -183,7 +181,7 @@ where
     }
 
     fn next_tok(&mut self) -> Result<()> {
-        self.cur = self.lexer.next().invert()?;
+        self.cur = self.lexer.next().transpose()?;
         Ok(())
     }
 
