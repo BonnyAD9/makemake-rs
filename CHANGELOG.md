@@ -1,8 +1,9 @@
 # CHANGELOG
 
-## future
+## v2.2.1
 ### Changes
 - Better error messages when parsing arguments.
+
 ### Fixes
 - Properly resolve parent directory name. (even if directory is `.`)
 
