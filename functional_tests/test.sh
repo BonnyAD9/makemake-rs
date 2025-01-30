@@ -6,9 +6,11 @@ cd -
 
 printf 'parenthesis: '
 ./parenthesis/test.sh
-printf 'equals:      '
+printf 'equals     : '
 ./equals/test.sh
-printf 'null check:  '
+printf 'null check : '
 ./null-check/test.sh
-printf 'call:        '
+printf 'call       : '
 ./call/test.sh
+printf 'rule 110:  : '
+./rule110/test.sh

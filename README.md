@@ -10,7 +10,7 @@ to create custom templates. The templates can also take parameters in form of
 variables and use some simple logic so that they are generic.
 
 Fun fact: makemake templates are actually turing complete. You can see proof in
-[examples][rule110].
+[functional_tests/rule110][rule110].
 
 ## Usage
 Show help:
@@ -55,4 +55,4 @@ The command will require sudo privilages for copy of the files.
 [repo]: https://github.com/BonnyAD9/makemake-rs
 [my-web]: https://bonnyad9.github.io/
 [version-badge]: https://img.shields.io/aur/version/makemake
-[rule110]: examples/rule110/README.md
+[rule110]: functional_tests/rule110/README.md

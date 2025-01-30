@@ -1,7 +1,7 @@
 ${? 'Works with 16 wide array' :
 I == MAX ? :
 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15 C16 '\n'
-#make('110.txt', I=I 'h',
+#make('file', I=I 'h',
     C1 = #make('rule.txt', V='.' C1 C2),
     C2 = #make('rule.txt', V=C1 C2 C3),
     C3 = #make('rule.txt', V=C2 C3 C4),

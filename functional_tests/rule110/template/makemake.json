@@ -3,7 +3,7 @@
     "files": {
         "makemake.json": "Ignore",
         "rule.txt": "Ignore",
-        "110.txt": "Make"
+        "file": "Make"
     },
     "vars": {
         "I": "",
