@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## future
+### Changes
+- Update help.
+
 ## v2.2.1
 ### Changes
 - Better error messages when parsing arguments.

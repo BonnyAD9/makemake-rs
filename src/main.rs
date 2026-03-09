@@ -322,6 +322,8 @@ fn help(args: Args) {
         "Welcome in {'g i}makemake{'_} by {signature}{'_}
 Version {}
 
+Makemake is utility that allows you to create and load folder templates.
+
 {'g}Usage:
   {'c}makemake {'w}<template name> {'gr}[options]{'_}
     Behaves according to the options, by default loads template. Aliases
@@ -403,6 +405,10 @@ Ehen option can be overriden, it means that it can be specified multiple
 times, and the last occurence takes effect.
 
 See {'w bold}makemake(7){'_} for description of the template format.
+
+ “ {'i}The one who has found his life will lose it, and the
+   one who has lost his life on My account will find it. {'_}”
+                                           {'w bold}✝ Matthew 10:39{'_}
 ",
         v.unwrap_or("unknown")
     );
