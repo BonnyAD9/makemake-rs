@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fmt::Write,
-    fs::{self, create_dir_all, read_dir, read_link, File},
+    fs::{self, File, create_dir_all, read_dir, read_link},
     io::{BufReader, BufWriter},
     os::unix::fs::symlink,
     path::{Path, PathBuf},

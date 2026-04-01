@@ -7,7 +7,7 @@ use pareg::Pareg;
 use std::{
     borrow::Cow,
     fs::{read_dir, remove_dir_all},
-    io::{stderr, stdin, stdout, IsTerminal, Write},
+    io::{IsTerminal, Write, stderr, stdin, stdout},
     mem,
     path::{Path, PathBuf},
     process::ExitCode,

@@ -7,7 +7,7 @@ use utf8_chars::BufReadCharsExt;
 
 use crate::{
     err::{Error, Result},
-    maker::{expand, ExpandContext},
+    maker::{ExpandContext, expand},
     writer::FakeWriter,
 };
 

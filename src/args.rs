@@ -1,10 +1,10 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    io::{stdout, IsTerminal},
+    io::{IsTerminal, stdout},
 };
 
-use pareg::{has_any_key, key_mval_arg, FromArg, Pareg, Result};
+use pareg::{FromArg, Pareg, Result, has_any_key, key_mval_arg};
 
 /// Yes/No/Auto
 #[derive(FromArg, Clone, Copy, PartialEq, Eq)]
