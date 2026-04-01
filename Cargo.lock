@@ -28,9 +28,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "convert_case"
-version = "0.6.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -91,9 +91,18 @@ dependencies = [
 
 [[package]]
 name = "litrs"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
+checksum = "1e4cf394bcd88ba72eb3b2862e21ef6458b0e1586654e213b0176e667bb9d19e"
+dependencies = [
+ "proc-macro2",
+]
+
+[[package]]
+name = "litrs"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 dependencies = [
  "proc-macro2",
 ]
@@ -107,8 +116,8 @@ dependencies = [
  "serde",
  "serde_json",
  "shell-words",
- "termal 2.0.0",
- "thiserror 2.0.11",
+ "termal",
+ "thiserror",
  "utf8-chars",
 ]
 
@@ -119,6 +128,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
+name = "minlin"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6015182c46495fbe1e875e03e0bc6660ee6614047026cf79c0067bbfaa7ace51"
+
+[[package]]
 name = "option-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,9 +147,9 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "pareg"
-version = "0.7.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8ad8da942097fb43f6c78e8c7f49cbcb9fa90463adc5500a0ccd2dcf94ebb3a"
+checksum = "450b031fa6090fde38b311a82074e1a3053fdf8c8444fe3d6915f63cf95a51d9"
 dependencies = [
  "pareg_core",
  "pareg_proc",
@@ -136,51 +157,52 @@ dependencies = [
 
 [[package]]
 name = "pareg_core"
-version = "0.7.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee72700acdbbb08d6381fd6b56273c0a210848cf100cdd1917992a95bd52d714"
+checksum = "cda020a8d3dc108c7350aeab46d67453472c7c8893f458be64d8fbe6c829b89e"
 dependencies = [
+ "minimal-lexical",
  "proc-macro2",
  "quote",
  "syn",
- "termal 1.2.2",
- "thiserror 1.0.58",
+ "termal",
+ "thiserror",
 ]
 
 [[package]]
 name = "pareg_proc"
-version = "0.7.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8d42fd0b95ea6b6d4960997a769979b6f2e72aefa80dc465408f93a073fb538"
+checksum = "9e0e0f1cc461a19f435437932df9f6acff6f8022c6b481d3bfdc8679eb6ae5c7"
 dependencies = [
  "pareg_core",
 ]
 
 [[package]]
 name = "place_macro"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded910602eebb5e39317d37dbfa6f2f470b5759d0e06b456e940207c861f17aa"
+checksum = "7184a838ea957f4354ee4087632287e6422fae12206bf7375a7774a904cf503e"
 dependencies = [
  "place_macro_proc",
 ]
 
 [[package]]
 name = "place_macro_core"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15a4aeb20828217e746ffbeba3120133961b4fc699995589443a386a78918e9d"
+checksum = "47bab9e5b5e3d59dcb49b5e8249a52127ac631980c35d20163c7b755abeec2d0"
 dependencies = [
  "convert_case",
- "litrs",
+ "litrs 0.5.1",
  "proc-macro2",
 ]
 
 [[package]]
 name = "place_macro_proc"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "278f0d63044c8f6a1e19d3c20b8ef2de4b5a0a845f5e42ab20d5a8bcb98755ab"
+checksum = "b40c6f0f1f18e9ef6334fafeaf1579c88b4cfe2dda26215c1251f9af325dbf5c"
 dependencies = [
  "place_macro_core",
  "proc-macro2",
@@ -188,18 +210,18 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.93"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60946a68e5f9d28b0dc1c21bb8a97ee7d018a8b322fa57838ba31cc878e22d99"
+checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.36"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7"
+checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
@@ -212,29 +234,33 @@ checksum = "dd6f9d3d47bdd2ad6945c5015a226ec6155d0bcdfd8f7cd29f86b71f8de99d2b"
 dependencies = [
  "getrandom",
  "libredox",
- "thiserror 2.0.11",
+ "thiserror",
 ]
 
 [[package]]
-name = "ryu"
-version = "1.0.17"
+name = "serde"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e86697c916019a8588c99b5fac3cead74ec0b4b819707a682fd4d23fa0ce1ba1"
+checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
+dependencies = [
+ "serde_core",
+ "serde_derive",
+]
 
 [[package]]
-name = "serde"
-version = "1.0.217"
+name = "serde_core"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
+checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.217"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a9bf7cf98d04a2b28aead066b7496853d4779c9cc183c440dbac457641e19a0"
+checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -243,27 +269,28 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.138"
+version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d434192e7da787e94a6ea7e9670b26a036d0ca41e0b7efb2676dd32bae872949"
+checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
 dependencies = [
  "itoa",
  "memchr",
- "ryu",
  "serde",
+ "serde_core",
+ "zmij",
 ]
 
 [[package]]
 name = "shell-words"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24188a676b6ae68c3b2cb3a01be17fbf7240ce009799bb56d5b1409051e78fde"
+checksum = "dc6fe69c597f9c37bfeeeeeb33da3530379845f10be461a66d16d03eca2ded77"
 
 [[package]]
 name = "syn"
-version = "2.0.96"
+version = "2.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5d0adab1ae378d7f53bdebc67a39f1f151407ef230f0ce2883572f5d8985c80"
+checksum = "e665b8803e7b1d2a727f4023456bbbbe74da67099c585258af0ad9c5013b9b99"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -272,103 +299,51 @@ dependencies = [
 
 [[package]]
 name = "termal"
-version = "1.2.2"
+version = "4.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8613da4a68d5728bbbcde4b7655d06056f0d481fa991257e24b68c1b25b21505"
+checksum = "e91e75933be6651d6945ffe998215db5562f2b40e65071149a184d93ad5484b5"
 dependencies = [
- "termal_core 1.1.0",
- "termal_proc 1.1.0",
-]
-
-[[package]]
-name = "termal"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98653f4470745f3a20545a4407a27b577cb73ea8449ee5350a75343471469b41"
-dependencies = [
- "termal_core 2.0.0",
- "termal_proc 2.0.0",
+ "termal_core",
+ "termal_proc",
 ]
 
 [[package]]
 name = "termal_core"
-version = "1.1.0"
+version = "4.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3628d8021a4510166b52ea1d1124891516a078a214444d30806c1afc9234bda0"
-dependencies = [
- "bitflags",
- "libc",
- "litrs",
- "place_macro",
- "proc-macro2",
- "thiserror 1.0.58",
-]
-
-[[package]]
-name = "termal_core"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f433f70d5934e7a2cdf96e294483149a6f1fb2eb97de0d94b0427b1e31f6babb"
+checksum = "7a766a6fe27d8a55afd9db7201c14c65712843ce74b9683cec2fa6e2e72805e0"
 dependencies = [
  "base64",
- "litrs",
+ "litrs 1.0.0",
+ "minlin",
  "place_macro",
  "proc-macro2",
- "thiserror 2.0.11",
+ "thiserror",
 ]
 
 [[package]]
 name = "termal_proc"
-version = "1.1.0"
+version = "4.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4edce9a93af8e642b32bbf8245abd6678193b5c059b6c4f59c5eca3e6d6f4db"
+checksum = "1aeefcc81ae1a51bcd9b7a027420c6504a2dd8b0688743b34cea81007bc8a165"
 dependencies = [
- "termal_core 1.1.0",
-]
-
-[[package]]
-name = "termal_proc"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3563495c6ac68d17efa5b9ccbbf2c1887bf42a08eca432b772290b0b5abb93fe"
-dependencies = [
- "termal_core 2.0.0",
+ "termal_core",
 ]
 
 [[package]]
 name = "thiserror"
-version = "1.0.58"
+version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03468839009160513471e86a034bb2c5c0e4baae3b43f79ffc55c4a5427b3297"
+checksum = "4288b5bcbc7920c07a1149a35cf9590a2aa808e0bc1eafaade0b80947865fbc4"
 dependencies = [
- "thiserror-impl 1.0.58",
-]
-
-[[package]]
-name = "thiserror"
-version = "2.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d452f284b73e6d76dd36758a0c8684b1d5be31f92b89d07fd5822175732206fc"
-dependencies = [
- "thiserror-impl 2.0.11",
+ "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.58"
+version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c61f3ba182994efc43764a46c018c347bc492c79f024e705f46567b418f6d4f7"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26afc1baea8a989337eeb52b6e72a039780ce45c3edfcc9c5b9d112feeb173c2"
+checksum = "ebc4ee7f67670e9b64d05fa4253e753e016c6c95ff35b89b7941d6b856dec1d5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -389,9 +364,9 @@ checksum = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202"
 
 [[package]]
 name = "utf8-chars"
-version = "3.0.5"
+version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f598f797138b219a4560b4e9c53c255e872e267c9e3fdcc75aa59a2a90953bcd"
+checksum = "ebe49e006d6df172d7f14794568a90fe41e05a1fa9e03dc276fa6da4bb747ec3"
 dependencies = [
  "arrayvec",
 ]
@@ -474,3 +449,9 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
+
+[[package]]
+name = "zmij"
+version = "1.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"

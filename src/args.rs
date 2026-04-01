@@ -148,7 +148,7 @@ impl Args {
         if action.needs_template() && template.is_none() {
             Err(args
                 .err_no_more_arguments()
-                .main_msg("Expected template name.")
+                .long_msg("Expected template name.")
                 .inline_msg("Add template name.")
                 .hint(
                     "Use `-t <template>` to set template name that starts \
@@ -183,7 +183,7 @@ fn assert_no_action(act: &Option<Action>, args: &Pareg) -> Result<()> {
         Err(args
             .err_invalid()
             .inline_msg("This is second action to do.")
-            .main_msg("Cannot set do more actions."))
+            .long_msg("Cannot set do more actions."))
     } else {
         Ok(())
     }
